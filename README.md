@@ -2,7 +2,11 @@
 Esse projeto foi desenvolvido para a matéria de Linguagens Formais e Compiladores, do 9º período do curso de Engenharia de Computação na Pontifícia Universidade Católica do Paraná.
 
 O projeto é dividido em três fases:
-## Fase 1: TODO
+## Fase 1: Criação e apresentação da linguagem
+A fase é composta de uma apresentação da linguagem definida, onde serão destacados os novos itens da gramática, as regras de produção criadas e as funções de interação com o hardware. 
+
+Além da apresentação dos itens anteriores, também é necessário a criação de no mínimo três exemplos de códigos, utilizando todas as funcionalidades definidas para a linguagem
+
 ## Fase 2: TODO
 ## Fase 3: TODO
 
