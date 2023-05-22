@@ -1,0 +1,54 @@
+{
+  int sensorValue;
+  boolean available;
+  int readValue;
+  int calculateSum(boolean flag)
+  {
+    int sum;
+    int j;
+	
+    sum = 0;
+    for (j = 1; j <= 10; j = j + 1)
+    {
+      if (flag)
+      {
+        sum = sum + j;
+      }
+      else
+      {
+        sum = sum - j;
+      }
+    }
+    
+    return sum;
+  }
+  
+  serialBaud 9600;
+  
+  pinMode 15, 1;
+  sensorValue = analogRead 15;
+
+  pinMode 12, 3;
+  if (sensorValue > 100)
+  {
+    digitalWrite 12, true;
+  }
+  else
+  {
+    digitalWrite 12, false;
+  }    
+
+  
+  while (true)
+  {
+	available = serialAvailable;
+	
+	if (available)
+	{
+	  readValue = serialRead;
+	  break;
+	}
+  }
+  
+  serialWrite readValue;
+}

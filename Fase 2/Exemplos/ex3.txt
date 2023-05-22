@@ -1,0 +1,33 @@
+{  
+  int sensorValue;
+  int serialValue;
+  boolean available;
+  boolean isDayTime;
+  
+  pinMode 14, 1;
+  sensorValue = analogRead 14;
+
+  if (sensorValue >= 100) 
+    isDaytime = true;
+  else 
+    isDaytime = false;
+   
+  serialBaud 9600;
+  
+  do 
+  {
+    available = serialAvailable;
+  } while (!available)
+  
+  serialValue = serialRead;
+  
+  pinMode 13, 3;
+  if (serialValue == 49) 
+  {
+    digitalWrite 13, true;
+  } 
+  else 
+  {
+    digitalWrite 13, false;
+  }
+}
