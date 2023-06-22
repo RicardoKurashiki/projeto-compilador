@@ -20,7 +20,7 @@ class Arduino:
             'R27': True,
             'R28': True,
             'R29': True,
-            'R30': False,
+            'R30': True,
             'R31': True
         }
 
@@ -97,6 +97,9 @@ class Arduino:
 
     def LDI(self, rh, k):
         return f"LDI {rh}, {k}"
+
+    def LDS(self, rh, a):
+        return f"LDS {rh}, {a}"
 
     def STS(self, a, rh):
         return f"STS {a}, {rh}"

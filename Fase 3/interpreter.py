@@ -55,21 +55,41 @@ class Interpreter:
                 str(hex(variableMemory))[2:], reg))
             self.instructions.append(self.device.CLR(reg))
             self.variableLogs[name]['reg'] = ""
-            self.device.mem += 2
+            # TODO: Ajustar OFFSET
+            self.device.mem += 4
+
+        def getVarInMem(name):
+            variableMemory = self.variableLogs[name]["mem"]
+            if (variableMemory == ""):
+                return None
+            reg = self.device.getRegister()
+            self.instructions.append(
+                self.device.LDS(reg, str(hex(variableMemory))[2:]))
+            self.instructions.append(self.device.CLR(reg))
+            # TODO: Ajustar OFFSET
+            self.device.mem += 4
 
         def run():
             for index in range(0, len(self.tokens)):
                 pastToken = self.tokens[index-1]
                 currentToken = self.tokens[index]
                 nextToken = self.tokens[index]
+
                 if (index < len(self.tokens)-1):
                     nextToken = self.tokens[index+1]
+
                 if (pastToken.type == "DATATYPE" and currentToken.type == "IDENTIFIER"):
                     createVariable(currentToken.value)
+
                 if (currentToken.type == "OPERATOR"):
                     if (currentToken.value == "="):
-                        saveVariableValue(pastToken.value, nextToken.value)
+                        if (nextToken.value.isdigit()):
+                            saveVariableValue(pastToken.value, nextToken.value)
+                        elif (nextToken.value.isalpha()):
+                            copyRegisters(pastToken.value, nextToken.value)
+
                 print(self.instructions)
+                print(self.variableLogs)
 
         run()
 

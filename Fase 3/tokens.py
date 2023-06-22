@@ -13,10 +13,10 @@ endpoints = ['break', 'return']
 datatypes = ['int', 'float', 'void', 'boolean', 'byte']
 keywords = ['for', 'while', 'do', 'if', 'elseif', 'else']
 
-hardwareSetup = ['pinMode']
+hardwareSetup = ['pinMode', 'serialBaud']
 hardwareInteractions = [
     'digitalRead', 'digitalWrite', 'analogRead', 'analogWrite',
-    'serialBaud', 'serialAvailable', 'serialRead', 'serialWrite'
+    'serialAvailable', 'serialRead', 'serialWrite'
 ]
 
 codeBlockStarter = ["{"]
@@ -35,7 +35,6 @@ interpreter = Interpreter()
 
 
 def _findTokens(c):
-    global interpreter
     global scope_depth
     # Ve qual é o char da posição após a atual
     scope_depth = -1
