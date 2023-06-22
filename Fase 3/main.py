@@ -8,4 +8,4 @@ if __name__ == "__main__":
     output = File("main.asm")                   # Arquivo de Output
     interpreter = tokens.run(script)
     print(interpreter.getCode(device))
-    # output.writeFile(result)                  # Cria o arquivo main.asm
+    # output.writeFile(result)                   # Cria o arquivo main.asm

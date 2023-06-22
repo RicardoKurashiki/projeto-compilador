@@ -99,10 +99,10 @@ class Arduino:
         return f"LDI {rh}, {k}"
 
     def LDS(self, rh, a):
-        return f"LDS {rh}, {a}"
+        return f"LDS {rh}, ${a}"
 
     def STS(self, a, rh):
-        return f"STS {a}, {rh}"
+        return f"STS ${a}, {rh}"
 
     # Instructions - Controller instructions
 
