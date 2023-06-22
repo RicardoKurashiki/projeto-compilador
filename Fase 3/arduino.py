@@ -6,21 +6,6 @@ class Arduino:
         self.max_mem = 65535
         self.mem = 512
         self.registers = {
-            'R0': True,
-            'R1': True,
-            'R2': True,
-            'R3': True,
-            'R4': True,
-            'R5': True,
-            'R6': True,
-            'R7': True,
-            'R8': True,
-            'R9': True,
-            'R10': False,
-            'R11': True,
-            'R13': True,
-            'R14': True,
-            'R15': True,
             'R16': True,
             'R17': True,
             'R18': True,
@@ -78,6 +63,9 @@ class Arduino:
     def DEC(self, rx):
         return f"DEC {rx}"
 
+    def CLR(self, rx):
+        return f"CLR {rx}"
+
     # Instructions - Jump instructions
     def RJMP(self, k):
         return f"RJMP {k}"
@@ -107,6 +95,13 @@ class Arduino:
     def MOV(self, rx, ry):
         return f"MOV {rx}, {ry}"
 
+    def LDI(self, rh, k):
+        return f"LDI {rh}, {k}"
+
+    def STS(self, a, rh):
+        return f"STS {a}, {rh}"
+
     # Instructions - Controller instructions
+
     def NOP(self):
         return "NOP"
