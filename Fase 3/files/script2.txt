@@ -2,23 +2,22 @@
     int x;
     int y;
 
-    x = 10;
-    y = 5;
+    x = 20;
+    y = 10 + 24;
+    int buttonStatus;
+    pinMode 2, 0;
+    pinMode 3, 1;
 
-    if (x > y) {
-        y = x;
+    while (x >= y)
+    {
+        buttonStatus = 1 + 2;
+        if (buttonStatus == 0)
+        {
+            digitalWrite 3,1;
+        }
+        else
+        {
+            digitalWrite 3,0;
+        }
     }
-
-    if (y > 10) {
-        y = 10;
-    }
-
-    int a;
-    int b;
-
-    a = 1;
-    b = 2;
-
-    a = 1 + 1 + 4 + 6;
-    b = a + 5 + 2 + 3;
 }

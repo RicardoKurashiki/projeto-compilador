@@ -1,0 +1,20 @@
+{
+    pinMode 3, 1;
+
+    int x;
+    int y;
+
+    x = 10;
+    y = 2 + 5;
+
+    int result;
+    result = x + y;
+    if (result >= 15)
+    {
+        digitalWrite 3, 1;
+    }
+    if (result < 15)
+    {
+        digitalWrite 3, 0;
+    }
+}

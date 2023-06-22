@@ -3,8 +3,8 @@ import random as rd
 
 class Arduino:
     def __init__(self):
-        self.max_mem = 65535
-        self.mem = 512
+        self.max_mem = 2303
+        self.mem = 256
         self.registers = {
             'R16': True,
             'R17': True,
@@ -108,3 +108,15 @@ class Arduino:
 
     def NOP(self):
         return "NOP"
+
+    def IN(self, rx, pin):
+        return f"IN {rx}, {pin}"
+
+    def OUT(self, pin, rx):
+        return f"OUT {pin}, {rx}"
+
+    def SBI(self, port, bit):
+        return f"SBI {port}, {bit}"
+
+    def CBI(self, port, bit):
+        return f"CBI {port}, {bit}"

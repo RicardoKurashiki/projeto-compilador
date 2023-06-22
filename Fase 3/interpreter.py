@@ -1,15 +1,23 @@
 from arduino import Arduino
 import math
 
+pinout = {
+    "B": ["8", "9", "10", "11", "12", "13", "-", "-"],
+    "C": ["A0", "A1", "A2", "A3", "A4", "A5", "-", "-"],
+    "D": ["0", "1", "2", "3", "4", "5", "6", "7"]
+}
+
 
 class Interpreter:
     def __init__(self):
         self.tokens = []                # Tokens separados do txt
         self.setupInstructions = []     # Instrucoes para SETUP
         self.instructions = []          # Instrucoes gerais
-        self.methodsInstructions = []   # Instrucoes para dentro de funcoes/if/else
         self.device = Arduino()         # Dispositivo utilizado
         self.variableLogs = {}          # Historico de todas as variaveis criadas
+        self.loopCounter = 0            # Contador de loops
+        self.isInLoopContext = -1
+        self.conditionsElements = []
 
     def _translate(self):
         def createVariable(varName):
@@ -19,6 +27,7 @@ class Interpreter:
                     self.variableLogs[varName] = {}
                     self.variableLogs[varName]['reg'] = reg
                     self.variableLogs[varName]['mem'] = ""
+                    self.variableLogs[varName]['value'] = ""
 
         def saveVariableValue(varName, value):
             if (varName in self.variableLogs.keys()):
@@ -28,6 +37,7 @@ class Interpreter:
                 reg = self.variableLogs[varName]['reg']
                 self.instructions.append(self.device.LDI(reg, value))
                 self.device.setRegister(reg)
+                self.variableLogs[varName]['value'] = value
                 saveVarInMem(varName)
             else:
                 print("Esta variavel ainda nao foi instanciada!")
@@ -78,8 +88,47 @@ class Interpreter:
             # TODO: Ajustar OFFSET
             self.device.mem += 4
 
-        def getHardwareSetup(index):
-            pass
+        def getHardware(index):
+            if (self.tokens[index].value == "pinMode"):
+                port = None
+                bit = None
+                value = self.tokens[index + 1].value
+                # 0 - Input / 1 - Output
+                direction = self.tokens[index + 3].value
+                for k in list(pinout.keys()):
+                    if (value in pinout[k]):
+                        bit = pinout[k].index(value)
+                        port = k
+                        break
+                if (port == None and bit == None):
+                    print("Este pino nao existe")
+                    exit(1)
+                if (direction == "0"):
+                    self.setupInstructions.append(
+                        self.device.CBI(f"DDR{port}", bit))
+                elif (direction == "1"):
+                    self.setupInstructions.append(
+                        self.device.SBI(f"DDR{port}", bit))
+            if (self.tokens[index].value == "digitalWrite"):
+                port = None
+                bit = None
+                value = self.tokens[index + 1].value
+                # 0 - OFF / 1 - ON
+                direction = self.tokens[index + 3].value
+                for k in list(pinout.keys()):
+                    if (value in pinout[k]):
+                        bit = pinout[k].index(value)
+                        port = k
+                        break
+                if (port == None and bit == None):
+                    print("Este pino nao existe")
+                    exit(1)
+                if (direction == "0"):
+                    self.instructions.append(
+                        self.device.CBI(f"PIN{port}", bit))
+                elif (direction == "1"):
+                    self.instructions.append(
+                        self.device.SBI(f"PIN{port}", bit))
 
         def run():
             index = 0
@@ -91,15 +140,110 @@ class Interpreter:
                 if (index < len(self.tokens)-1):
                     nextToken = self.tokens[index+1]
 
+                if (currentToken.type == "CODE BLOCK STARTER"):
+                    self.isInLoopContext += 1
+                    print(self.isInLoopContext)
+
+                if (currentToken.type == "CODE BLOCK FINISHER"):
+                    nextLabel = "next_" + str(self.loopCounter) + ":"
+                    self.isInLoopContext -= 1
+                    print(self.isInLoopContext)
+
+                    if (len(self.conditionsElements) == 1):
+                        self.instructions.append(self.device.BRNE(
+                            "next_" + str(self.loopCounter)))
+                    else:
+                        if (self.conditionsElements[1].value == '>'):
+                            self.instructions.append(self.device.BRLE(
+                                "next_" + str(self.loopCounter)))
+                        elif (self.conditionsElements[1].value == '<'):
+                            self.instructions.append(self.device.BRGE(
+                                "next_" + str(self.loopCounter)))
+                        elif (self.conditionsElements[1].value == '>='):
+                            self.instructions.append(self.device.BRLO(
+                                "next_" + str(self.loopCounter)))
+                        elif (self.conditionsElements[1].value == '<='):
+                            self.instructions.append(self.device.BRSH(
+                                "next_" + str(self.loopCounter)))
+                        elif (self.conditionsElements[1].value == '=='):
+                            self.instructions.append(self.device.BRNE(
+                                "next_" + str(self.loopCounter)))
+                        elif (self.conditionsElements[1].value == '!='):
+                            self.instructions.append(self.device.BREQ(
+                                "next_" + str(self.loopCounter)))
+
+                    self.instructions.append(self.device.RJMP(
+                        "while_" + str(self.loopCounter)))
+                    self.instructions.append(nextLabel)
+
                 if (pastToken.type == "DATATYPE" and currentToken.type == "IDENTIFIER"):
                     createVariable(currentToken.value)
 
-                if (currentToken.type == "HARDWARE SETUP"):
-                    getHardwareSetup(index)
+                if (currentToken.type == "HARDWARE SETUP" or currentToken.type == "HARDWARE INTERACTION"):
+                    getHardware(index)
 
                 if (currentToken.type == "KEYWORD"):
                     if (currentToken.value == "if"):
                         pass
+                        # # Ler condição, começa em ( e termina )
+                        # elementsList = []
+                        # index += 2
+                        # while (self.tokens[index].type != "FUNCTION ARGUMENT FINISHER"):
+                        #     elementsList.append(self.tokens[index])
+                        #     index += 1
+                        # var1 = elementsList[0]
+                        # var2 = elementsList[-1]
+                        # comparison = elementsList[1:-1]
+                        # comparisonText = "".join([e.value for e in comparison])
+                        # # CPI
+                        # if (comparisonText == ">="):
+                        #     # ADD NAS INSTRUCOES O BGL
+                        #     pass
+                        # Criar novo código de bloco
+                    elif (currentToken.value == "elseif"):
+                        pass
+                    elif (currentToken.value == "else"):
+                        pass
+                    elif (currentToken.value == "while"):
+                        self.loopCounter += 1
+                        contextName = "while_" + str(self.loopCounter) + ":"
+                        index += 2
+                        while (self.tokens[index].type != "FUNCTION ARGUMENT FINISHER"):
+                            self.conditionsElements.append(self.tokens[index])
+                            index += 1
+                        index += 1
+
+                        firstReg = self.device.getRegister()
+                        secondReg = self.device.getRegister()
+                        if (len(self.conditionsElements) == 1):
+                            if (self.conditionsElements[0].value == "true"):
+                                self.instructions.append(
+                                    self.device.LDI(firstReg, 1))
+                                self.instructions.append(
+                                    self.device.LDI(secondReg, 1))
+                            elif (self.conditionsElements[0].value == "false"):
+                                self.instructions.append(
+                                    self.device.LDI(firstReg, 1))
+                                self.instructions.append(
+                                    self.device.LDI(secondReg, 2))
+                        else:
+                            if (self.conditionsElements[0].value.isdigit()):
+                                self.instructions.append(
+                                    self.device.LDI(firstReg, self.conditionsElements[0].value))
+                            else:
+                                getVarInMem(self.conditionsElements[0].value)
+                                firstReg = self.variableLogs[self.conditionsElements[0].value]['reg']
+
+                            if (self.conditionsElements[2].value.isdigit()):
+                                self.instructions.append(
+                                    self.device.LDI(secondReg, self.conditionsElements[2].value))
+                            else:
+                                getVarInMem(self.conditionsElements[2].value)
+                                firstReg = self.variableLogs[self.conditionsElements[2].value]['reg']
+
+                        self.instructions.append(contextName)
+                        self.instructions.append(
+                            self.device.CP(firstReg, secondReg))
 
                 if (currentToken.type == "OPERATOR"):
                     if (currentToken.value == "="):
@@ -112,26 +256,26 @@ class Interpreter:
                         index += 1
                         while (self.tokens[index].type != "TERMINATOR"):
                             elementsList.append(self.tokens[index])
-                            # print(elementsList)
                             index += 1
 
                         if (len(elementsList) != 1):
                             numberResult = 0
                             elementIndex = 0
                             while elementIndex != (len(elementsList) - 1):
-                                if elementsList[elementIndex].value.isdigit() and (elementIndex + 2) < len(elementsList) and elementsList[elementIndex + 2].value.isdigit():
+                                if (elementIndex + 2) < len(elementsList) and elementsList[elementIndex + 2].value.isdigit():
                                     arithOp = ""
                                     for i in range(3):
-                                        arithOp += elementsList[elementIndex + i].value
+                                        if elementsList[elementIndex + i].value.isdigit():
+                                            arithOp += elementsList[elementIndex + i].value
+                                        elif elementsList[elementIndex + i].type == "ARITHMETIC OPERATOR":
+                                            arithOp += elementsList[elementIndex + i].value
+                                        else:
+                                            arithOp += self.variableLogs[elementsList[elementIndex + i].value]['value']
                                     numberResult = math.floor(eval(arithOp))
                                     del elementsList[elementIndex:(
                                         elementIndex + 2)]
                                     elementsList[elementIndex].value = str(
                                         numberResult)
-                                else:
-                                    elementIndex += 1
-                        for e in elementsList:
-                            print(e.value)
 
                         if (len(elementsList) == 1):
                             nextToken = elementsList[0]
@@ -163,9 +307,6 @@ class Interpreter:
                             else:
                                 firstReg = algorithmReg
                                 secondReg = self.variableLogs[opVar]['reg']
-
-                            print(arithOp)
-                            print(opVar)
                             if (arithOp == "+"):
                                 self.instructions.append(
                                     self.device.ADD(firstReg, secondReg))
@@ -174,10 +315,7 @@ class Interpreter:
                                 self.instructions.append(
                                     self.device.SUB(firstReg, secondReg))
                                 saveVarInMem(pastToken.value, firstReg)
-
-                print(self.variableLogs)
                 index += 1
-            print(self.instructions)
         run()
 
     def add(self, datatype):
@@ -188,10 +326,8 @@ class Interpreter:
         self._translate()       # Cria lista de instructions
         code = "start:\n"
         for i in self.setupInstructions:
-            code += f"  {i}\n"
+            code += f"{i}\n"
         code += f"main:\n"
         for i in self.instructions:
-            code += f"  {i}\n"
-        for i in self.methodsInstructions:
-            code += f"  {i}\n"
+            code += f"{i}\n"
         return code

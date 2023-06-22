@@ -139,8 +139,18 @@ def _findTokens(c):
                 interpreter.add(DataType("COMPARISON", char, scope_depth))
                 pos += 1
             elif char in operators:
-                interpreter.add(
-                    DataType("OPERATOR", char, scope_depth))
+                if (char == "=" or char == "!"):
+                    if (seeNextPos(line, pos) == "="):
+                        char += "="
+                        pos += 1
+                        interpreter.add(
+                            DataType("COMPARISON", char, scope_depth))
+                    else:
+                        interpreter.add(
+                            DataType("OPERATOR", char, scope_depth))
+                else:
+                    interpreter.add(
+                        DataType("OPERATOR", char, scope_depth))
                 pos += 1
             elif char in arithmetics:
                 interpreter.add(
@@ -159,4 +169,6 @@ def _findTokens(c):
 def run(f):
     code = f.getLines()
     _findTokens(code)
+    # for i in interpreter.tokens:
+    #     print(i.type, i.value)
     return interpreter

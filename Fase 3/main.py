@@ -4,8 +4,10 @@ from arduino import Arduino
 
 if __name__ == "__main__":
     device = Arduino()
-    script = File("files/script2.txt")          # Arquivo de Input
-    output = File("main.asm")                   # Arquivo de Output
+    fileType = 1
+    script = File(f"files/script{fileType}.txt")          # Arquivo de Input
+    output = File(f"main{fileType}.asm")                   # Arquivo de Output
     interpreter = tokens.run(script)
-    print(interpreter.getCode(device))
-    # output.writeFile(result)                   # Cria o arquivo main.asm
+    result = interpreter.getCode(device)
+    print(result)
+    output.writeFile(result)                   # Cria o arquivo main.asm
