@@ -3,11 +3,13 @@
     int y;
     int z;
 
+    pinMode 13, 1;
+
     x = 5;
     y = 2;
 
     z = x + y;
     z = x - y;
-    z = x * y;
-    z = x / y;
+
+    digitalWrite 13, 1;
 }

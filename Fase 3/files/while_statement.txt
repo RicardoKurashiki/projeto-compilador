@@ -5,7 +5,6 @@
 
     while (counter < 100)
     {
-        // Talvez ver se ele ta somando/subtraindo com ele mesmo, e se tiver, colocar um INC/DEC dependendo do valor da soma/subtração
         counter = counter + 1;
     }
 }

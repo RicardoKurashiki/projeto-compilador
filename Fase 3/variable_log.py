@@ -1,20 +1,22 @@
 class VariableLog:
-    def __init__(self):
+    def __init__(self, device):
         self.variables = []
         self.verbose = False
+        self.device = device
 
     def toggleVerbose(self):
         self.verbose = not self.verbose
         print(f"VERBOSE > {self.verbose}")
 
-    def add(self, varName, reg=None, mem=None):
+    def add(self, varName):
         # Verificar se nao existe ja essa var
-        variable = Variable(name=varName, reg=reg, mem=mem)
+        variable = Variable(name=varName)
         self.variables.append(variable)
         if self.verbose:
-            print(f"ADDED VARIABLE > {varName} | {reg} | {mem}")
+            print(f"ADDED VARIABLE > {varName}")
+        self.setMem(varName)
 
-    def hasVariable(self, varName):
+    def getVariable(self, varName):
         hasVar = False
         selectedVar = None
         for variable in self.variables:
@@ -24,63 +26,31 @@ class VariableLog:
                 break
         if self.verbose:
             print(f"HAS VARIABLE {varName} > {hasVar}")
-        return hasVar, selectedVar
-
-    def getReg(self, varName):
-        # Verificar se o reg nao esta em uso
-        hasVar, variable = self.hasVariable(varName)
-        if not hasVar:
-            if self.verbose:
-                print(f"GET REG {varName} > DO NOT EXIST")
-            return None
-        if self.verbose:
-            print(f"GET REG {varName} > {variable.reg}")
-        return variable.reg
+        return selectedVar
 
     def getMem(self, varName):
-        hasVar, variable = self.hasVariable(varName)
-        if not hasVar:
-            if self.verbose:
-                print(f"GET MEM {varName} > DO NOT EXIST")
-            return None
+        variable = self.getVariable(varName)
         if self.verbose:
             print(f"GET MEM {varName} > {variable.address}")
         return variable.address
 
-    def setReg(self, varName, reg):
-        hasVar, variable = self.hasVariable(varName)
-        if not hasVar:
+    def setMem(self, varName):
+        variable = self.getVariable(varName)
+        if (self.device.mem < self.device.max_mem):
+            mem_hex = str(hex(self.device.mem))
+            variable.setMem(mem_hex)
+            self.device.mem += 4
             if self.verbose:
-                print(f"SET REG {varName} > DO NOT EXIST")
-            return False
-        variable.setReg(reg)
-        if self.verbose:
-            print(f"SET REG {varName} > {reg}")
-        return True
-
-    def setMem(self, varName, mem):
-        hasVar, variable = self.hasVariable(varName)
-        if not hasVar:
-            if self.verbose:
-                print(f"SET MEM {varName} > DO NOT EXIST")
-            return False
-        variable.setMem(mem)
-        if self.verbose:
-            print(f"SET MEM {varName} > {mem}")
-        return True
-
-    def removeReg(self, varName):
-        self.setReg(varName, None)
+                print(f"SET MEM {varName} > {mem_hex}")
+            return True
+        print("Sem memória")
+        exit(1)
 
     def removeMem(self, varName):
         self.setMem(varName, None)
 
     def removeVar(self, varName):
-        hasVar, variable = self.hasVariable(varName)
-        if not hasVar:
-            if self.verbose:
-                print(f"REMOVE VAR {varName} > DO NOT EXIST")
-            return False
+        variable = self.getVariable(varName)
         self.variables.remove(variable)
         if self.verbose:
             print(f"REMOVE VAR {varName} > TRUE")
@@ -94,16 +64,12 @@ class VariableLog:
 
 
 class Variable:
-    def __init__(self, name=None, reg=None, mem=None):
+    def __init__(self, name=None, mem=None):
         self.name = name
-        self.reg = reg
         self.address = mem
-
-    def setReg(self, reg):
-        self.reg = reg
 
     def setMem(self, mem):
         self.address = mem
 
     def toString(self):
-        return f"VAR: {self.name} | REG: {self.reg} | MEM ADDRESS: {self.address}"
+        return f"VAR: {self.name} | MEM ADDRESS: {self.address}"

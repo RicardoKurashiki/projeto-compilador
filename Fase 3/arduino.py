@@ -30,7 +30,9 @@ class Arduino:
         }
 
     def getRegister(self):
-        return rd.choice([r for r in self.registers if self.registers[r] == True])
+        reg = rd.choice([r for r in self.registers if self.registers[r] == True])
+        self.setRegister(reg)
+        return reg
 
     def setRegister(self, reg):
         if (self.registers[reg]):
@@ -105,6 +107,12 @@ class Arduino:
 
     def BRLE(self, k):  # Skip (<=)
         return f"BRLE {k}"
+    
+    def SBIS(self, port, bit):
+        return f"SBIS {port}, {bit}"
+
+    def SBIC(self, port, bit):
+        return f"SBIC {port}, {bit}"
 
     # Instructions - Data copy and load instructions
     def MOV(self, rx, ry):
@@ -114,10 +122,10 @@ class Arduino:
         return f"LDI {rh}, {k}"
 
     def LDS(self, rh, a):
-        return f"LDS {rh}, ${a}"
+        return f"LDS {rh}, {a}"
 
     def STS(self, a, rh):
-        return f"STS ${a}, {rh}"
+        return f"STS {a}, {rh}"
 
     # Instructions - Controller instructions
 

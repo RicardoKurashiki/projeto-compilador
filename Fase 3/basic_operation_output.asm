@@ -1,0 +1,20 @@
+#define __SFR_OFFSET 0
+#include "avr/io.h"
+.global hwSetup
+
+hwSetup:
+SBI DDRB, 5
+main:
+LDI R31, 5
+STS 0x100, R31
+LDI R17, 2
+STS 0x104, R17
+LDS R21, 0x100
+LDS R27, 0x104
+ADD R21, R27
+STS 0x108, R21
+LDS R25, 0x100
+LDS R22, 0x104
+SUB R25, R22
+STS 0x108, R25
+SBI PORTB, 5

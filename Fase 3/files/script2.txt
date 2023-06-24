@@ -1,16 +1,17 @@
 {
     int x;
     int y;
-
-    x = 20;
-    y = 10 + 24;
     int buttonStatus;
+
     pinMode 2, 0;
     pinMode 3, 1;
 
-    while (x >= y)
+    x = 20;
+    y = 10 + 20;
+
+    while (x <= y)
     {
-        buttonStatus = 1 + 2;
+        buttonStatus = digitalRead 2;
         if (buttonStatus == 0)
         {
             digitalWrite 3, 1;
@@ -18,6 +19,9 @@
         else
         {
             digitalWrite 3, 0;
+            x = x + 1;
         }
     }
+
+    digitalWrite 3,0;
 }
