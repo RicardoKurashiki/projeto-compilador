@@ -1,11 +1,6 @@
 from arduino import Arduino
 from variable_log import VariableLog
 
-pinout = {
-    "B": ["8", "9", "10", "11", "12", "13", "-", "-"],
-    "C": ["A0", "A1", "A2", "A3", "A4", "A5", "-", "-"],
-    "D": ["0", "1", "2", "3", "4", "5", "6", "7"]
-}
 
 
 class Interpreter:
@@ -13,6 +8,7 @@ class Interpreter:
         self.tokens = []                # Tokens separados do txt
         self.device = Arduino()
         self.varLog = VariableLog()
+        self.counter = Counter()
 
     # == Funcoes Aux == #
 
@@ -154,23 +150,36 @@ class Interpreter:
     def variableLogic(self):
         pass
 
-    def keywordLogic(self, keyword, condition, instructions):
+    def keywordLogic(self, keyword, condition, instructions, isEnd=True):
+        code = []
+        self.counter.printDebug()
         if (keyword.value == "if"):
-            self.translator(instructions)
+            self.counter.addIf()
+            code.append(f"if_stat{self.counter.getIf()}:")
+            result = self.translator(instructions)
         elif (keyword.value == "elseif"):
-            self.translator(instructions)
+            code.append(f"elseif_stat{self.counter.getIf()}:")
+            result = self.translator(instructions)
         elif (keyword.value == "else"):
-            self.translator(instructions)
+            code.append(f"else_stat{self.counter.getIf()}:")
+            result = self.translator(instructions)
         elif (keyword.value == "while"):
-            self.translator(instructions)
-        return ""
+            self.counter.addWhile()
+            result = self.translator(instructions)
+        self.counter.printDebug()
+        code.extend(result)
+        if (keyword.value in ["if", "elseif", "else"] and isEnd):
+            code.append(f"end_if{self.counter.popIf()}:")
+        elif (keyword.value == "while"):
+            code.append(f"end_while{self.counter.popWhile()}:")
+        return code
 
     def hardwareLogic(self):
         pass
 
     def translator(self, instructions):
         # Retorna uma string que sera o codigo
-        code = ""
+        code = []
         pos = 0
         while (pos < len(instructions)):
             # Separa cada instrucao
@@ -183,8 +192,10 @@ class Interpreter:
             if (currentInstruction.type == "KEYWORD"):
                 condition, pos = self.getCondition(instructions, pos)
                 keywordInstructions, pos = self.getScope(instructions, pos)
-                self.keywordLogic(currentInstruction,
-                                  condition, keywordInstructions)
+                isEnd = instructions[pos+1].value not in ['elseif', 'else']
+                result = self.keywordLogic(currentInstruction,
+                                  condition, keywordInstructions, isEnd)
+                code.extend(result)
             # Vai para a proxima instrucao
             pos += 1
         return code
@@ -197,5 +208,54 @@ class Interpreter:
     def run(self, device):
         self.device = device
         code = self.translator(self.tokens)
+        for c in code:
+            print(c)
+            print("...")
         # self.varLog.printLog()
         return code
+
+class Counter:
+    def __init__(self):
+        # Eh necessario ser stack para conseguir ter varios aninhados
+        self.if_counter = 0
+        self.while_counter = 0
+        self.if_total = 0
+        self.while_total = 0
+        self.if_stack = []
+        self.while_stack = []
+    
+    def addIf(self):
+        self.if_counter += 1
+        self.if_total += 1
+        self.if_stack.append(self.if_counter)
+    
+    def addWhile(self):
+        self.while_counter += 1
+        self.while_total += 1
+        self.while_stack.append(self.while_counter)
+
+    def getIf(self):
+        return self.if_counter
+
+    def getWhile(self):
+        return self.while_counter
+
+    def popIf(self):
+        value = self.if_stack.pop()
+        self.if_counter = value - 1
+        return value
+
+    def popWhile(self):
+        value = self.while_stack.pop()
+        self.while_counter = value - 1
+        return value
+
+    def printDebug(self):
+        print("\n== DEBUG START ==")
+        print(f"IF STACK: {self.if_stack}")
+        print(f"WHILE STACK: {self.while_stack}")
+        print(f"IF COUNTER: {self.if_counter}")
+        print(f"WHILE COUNTER: {self.while_counter}")
+        print(f"IF TOTAL: {self.if_total}")
+        print(f"WHILE TOTAL: {self.while_total}")
+        print("== DEBUG END ==\n")

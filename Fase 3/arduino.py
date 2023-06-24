@@ -1,5 +1,10 @@
 import random as rd
 
+pinout = {
+    "B": ["8", "9", "10", "11", "12", "13", "-", "-"],
+    "C": ["A0", "A1", "A2", "A3", "A4", "A5", "-", "-"],
+    "D": ["0", "1", "2", "3", "4", "5", "6", "7"]
+}
 
 class Arduino:
     def __init__(self):
@@ -34,6 +39,16 @@ class Arduino:
     def removeRegister(self, reg):
         if (not self.registers[reg]):
             self.registers[reg] = True
+
+    def getPinout(self, pin):
+        port = None
+        bit = None
+        for k in list(pinout.keys()):
+            if (pin in pinout[k]):
+                bit = pinout[k].index(pin)
+                port = k
+                break
+        return port, bit
 
     # Instructions - Arithmetical and logical operations
     def ADD(self, rx, ry):
