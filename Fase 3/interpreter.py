@@ -15,6 +15,7 @@ class Interpreter:
         self.varLog = VariableLog()
 
     # == Funcoes Aux == #
+
     def loadConditions(self, firstTerm, secondTerm):
         outputInstructions = []
         firstTermReg = self.device.getRegister()
@@ -114,8 +115,10 @@ class Interpreter:
     def getCondition(self, instructions, pos):
         # Funcao vai ler desde a abertura de "(" ate o fechamento de ")"
         outputInstructions = []
-        if (instructions[pos + 1].type == "FUNCTION ARGUMENT STARTER"):
-            pos += 2
+        pos += 1
+        if (instructions[pos].type != "FUNCTION ARGUMENT STARTER"):
+            return outputInstructions, pos
+        pos += 1
         instruction = instructions[pos]
         while (instruction.type != "FUNCTION ARGUMENT FINISHER"):
             outputInstructions.append(instruction)
@@ -136,8 +139,8 @@ class Interpreter:
             outputInstructions.append(instruction)
             pos += 1
             instruction = instructions[pos]
-        pos += 1
         return outputInstructions, pos
+
     # == Funcoes Principais == #
 
     def arithmeticLogic(self):
@@ -169,7 +172,6 @@ class Interpreter:
         # Retorna uma string que sera o codigo
         code = ""
         pos = 0
-        print(" ".join([i.value for i in instructions]))
         while (pos < len(instructions)):
             # Separa cada instrucao
             pastInstruction = instructions[pos-1]
