@@ -1,0 +1,13 @@
+{
+    int x;
+    int y;
+    int z;
+
+    x = 5;
+    y = 2;
+
+    z = x + y;
+    z = x - y;
+    z = x * y;
+    z = x / y;
+}

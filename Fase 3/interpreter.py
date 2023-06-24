@@ -1,5 +1,5 @@
 from arduino import Arduino
-import math
+from variable_log import VariableLog
 
 pinout = {
     "B": ["8", "9", "10", "11", "12", "13", "-", "-"],
@@ -11,323 +11,189 @@ pinout = {
 class Interpreter:
     def __init__(self):
         self.tokens = []                # Tokens separados do txt
-        self.setupInstructions = []     # Instrucoes para SETUP
-        self.instructions = []          # Instrucoes gerais
-        self.device = Arduino()         # Dispositivo utilizado
-        self.variableLogs = {}          # Historico de todas as variaveis criadas
-        self.loopCounter = 0            # Contador de loops
-        self.isInLoopContext = -1
-        self.conditionsElements = []
+        self.device = Arduino()
+        self.varLog = VariableLog()
 
-    def _translate(self):
-        def createVariable(varName):
-            if (self.device.mem < self.device.max_mem):
-                if (varName not in self.variableLogs.keys()):
-                    reg = self.device.getRegister()
-                    self.variableLogs[varName] = {}
-                    self.variableLogs[varName]['reg'] = reg
-                    self.variableLogs[varName]['mem'] = ""
-                    self.variableLogs[varName]['value'] = ""
+    # == Funcoes Aux == #
+    def loadConditions(self, firstTerm, secondTerm):
+        outputInstructions = []
+        firstTermReg = self.device.getRegister()
+        secondTermReg = self.device.getRegister()
+        if (firstTerm.isdigit() and secondTerm.isdigit()):
+            # Carrega número no registrador 1
+            outputInstructions.append(self.device.LDI(firstTermReg, firstTerm))
+            # Carrega número no registrador 2
+            outputInstructions.append(
+                self.device.LDI(secondTermReg, secondTerm))
+            # Realiza a comparação
+            outputInstructions.append(
+                self.device.CP(firstTermReg, secondTermReg))
+            # Limpa registrador 1
+            outputInstructions.append(self.device.CLR(firstTermReg))
+            # Limpa registrador 2
+            outputInstructions.append(self.device.CLR(secondTermReg))
+        elif (firstTerm.isdigit() and not secondTerm.isdigit()):
+            # Carrega número no registrador 1
+            outputInstructions.append(self.device.LDI(firstTermReg, firstTerm))
+            # Carrega da memória o valor da variável no registrador 2
+            memAddress = self.varLog.getMem(secondTerm)
+            outputInstructions.append(
+                self.device.LDS(secondTermReg, memAddress))
+            # Realiza a comparação
+            outputInstructions.append(
+                self.device.CP(firstTermReg, secondTermReg))
+            # Limpa registrador 1
+            outputInstructions.append(self.device.CLR(firstTermReg))
+            # Limpa registrador 2
+            outputInstructions.append(self.device.CLR(secondTermReg))
+        elif (not firstTerm.isdigit() and secondTerm.isdigit()):
+            # Carrega na memária o valor da variável no registrador 1
+            memAddress = self.varLog.getMem(firstTerm)
+            outputInstructions.append(
+                self.device.LDS(firstTerm, memAddress))
+            # Carrega número no registrador 2
+            outputInstructions.append(
+                self.device.LDI(secondTermReg, secondTerm))
+            # Realiza a comparação
+            outputInstructions.append(
+                self.device.CP(firstTermReg, secondTermReg))
+            # Limpa registrador 1
+            outputInstructions.append(self.device.CLR(firstTermReg))
+            # Limpa registrador 2
+            outputInstructions.append(self.device.CLR(secondTermReg))
+        else:
+            # Carrega na memária o valor da variável no registrador 1
+            memAddress = self.varLog.getMem(firstTerm)
+            outputInstructions.append(
+                self.device.LDS(firstTerm, memAddress))
+            # Carrega na memária o valor da variável no registrador 2
+            memAddress = self.varLog.getMem(secondTerm)
+            outputInstructions.append(
+                self.device.LDS(secondTermReg, memAddress))
+            # Realiza a comparação
+            outputInstructions.append(
+                self.device.CP(firstTermReg, secondTermReg))
+            # Limpa registrador 1
+            outputInstructions.append(self.device.CLR(firstTermReg))
+            # Limpa registrador 2
+            outputInstructions.append(self.device.CLR(secondTermReg))
+        return outputInstructions
 
-        def saveVariableValue(varName, value):
-            if (varName in self.variableLogs.keys()):
-                if (self.variableLogs[varName]['reg'] == ""):
-                    self.variableLogs[varName]['reg'] = self.device.getRegister(
-                    )
-                reg = self.variableLogs[varName]['reg']
-                self.instructions.append(self.device.LDI(reg, value))
-                self.device.setRegister(reg)
-                self.variableLogs[varName]['value'] = value
-                saveVarInMem(varName)
-            else:
-                print("Esta variavel ainda nao foi instanciada!")
-                exit(1)
+    def getBranch(self, comparison, targetLabel):
+        result = ""
+        if comparison == "==":
+            result = self.device.BREQ(targetLabel)
+        elif comparison == "!=":
+            result = self.device.BRNE(targetLabel)
+        elif comparison == ">":
+            result = self.device.BRSH(targetLabel)
+        elif comparison == "<":
+            result = self.device.BRLO(targetLabel)
+        elif comparison == ">=":
+            result = self.device.BRGE(targetLabel)
+        elif comparison == "<=":
+            result = self.device.BRLE(targetLabel)
+        return result
 
-        def copyRegisters(varName1, varName2):
-            if (varName1 in self.variableLogs.keys() and varName2 in self.variableLogs.keys()):
-                getVarInMem(varName1)
-                getVarInMem(varName2)
-                reg1 = self.variableLogs[varName1]['reg']
-                reg2 = self.variableLogs[varName2]['reg']
-                self.instructions.append(self.device.MOV(reg1, reg2))
-                self.device.setRegister(reg1)
-                self.variableLogs[varName2]['reg'] = ""
-                saveVarInMem(varName1)
-                self.device.removeRegister(reg2)
-                self.instructions.append(self.device.CLR(reg2))
-            else:
-                print("Alguma variavel nao foi instanciada!")
-                exit(1)
+    def getInvertedBranch(self, comparison, targetLabel):
+        result = ""
+        if comparison == "==":
+            result = self.device.BRNE(targetLabel)
+        elif comparison == "!=":
+            result = self.device.BREQ(targetLabel)
+        elif comparison == ">":
+            result = self.device.BRLE(targetLabel)
+        elif comparison == "<":
+            result = self.device.BRGE(targetLabel)
+        elif comparison == ">=":
+            result = self.device.BRLO(targetLabel)
+        elif comparison == "<=":
+            result = self.device.BRSH(targetLabel)
+        return result
 
-        def saveVarInMem(varName, registrador=None):
-            variableMemory = self.variableLogs[varName]['mem']
-            if (variableMemory == ""):
-                variableMemory = self.device.mem
-            self.variableLogs[varName]['mem'] = variableMemory
-            if (registrador == None):
-                reg = self.variableLogs[varName]['reg']
-            else:
-                reg = registrador
-            self.instructions.append(self.device.STS(
-                str(hex(variableMemory))[2:], reg))
-            self.instructions.append(self.device.CLR(reg))
-            self.device.removeRegister(reg)
-            self.variableLogs[varName]['reg'] = ""
-            # TODO: Ajustar OFFSET
-            self.device.mem += 4
+    def getCondition(self, instructions, pos):
+        # Funcao vai ler desde a abertura de "(" ate o fechamento de ")"
+        outputInstructions = []
+        if (instructions[pos + 1].type == "FUNCTION ARGUMENT STARTER"):
+            pos += 2
+        instruction = instructions[pos]
+        while (instruction.type != "FUNCTION ARGUMENT FINISHER"):
+            outputInstructions.append(instruction)
+            pos += 1
+            instruction = instructions[pos]
+        pos += 1
+        return outputInstructions, pos
 
-        def getVarInMem(varName):
-            variableMemory = self.variableLogs[varName]["mem"]
-            if (variableMemory == ""):
-                return None
-            self.variableLogs[varName]["reg"] = self.device.getRegister()
-            reg = self.variableLogs[varName]["reg"]
-            self.device.setRegister(reg)
-            self.instructions.append(
-                self.device.LDS(reg, str(hex(variableMemory))[2:]))
-            # TODO: Ajustar OFFSET
-            self.device.mem += 4
+    def getScope(self, instructions, pos):
+        # Funcao vai ler desde a abertura de "{" ate o fechamento de "}"
+        outputInstructions = []
+        if (instructions[pos].type == "CODE BLOCK STARTER"):
+            pos += 1
+        instruction = instructions[pos]
+        scope = instruction.scope_depth
+        # Se houver um outro bloco dentro, vai tudo junto
+        while (instruction.type != "CODE BLOCK FINISHER" or instruction.scope_depth >= scope):
+            outputInstructions.append(instruction)
+            pos += 1
+            instruction = instructions[pos]
+        pos += 1
+        return outputInstructions, pos
+    # == Funcoes Principais == #
 
-        def getHardware(index):
-            if (self.tokens[index].value == "pinMode"):
-                port = None
-                bit = None
-                value = self.tokens[index + 1].value
-                # 0 - Input / 1 - Output
-                direction = self.tokens[index + 3].value
-                for k in list(pinout.keys()):
-                    if (value in pinout[k]):
-                        bit = pinout[k].index(value)
-                        port = k
-                        break
-                if (port == None and bit == None):
-                    print("Este pino nao existe")
-                    exit(1)
-                if (direction == "0"):
-                    self.setupInstructions.append(
-                        self.device.CBI(f"DDR{port}", bit))
-                elif (direction == "1"):
-                    self.setupInstructions.append(
-                        self.device.SBI(f"DDR{port}", bit))
-            if (self.tokens[index].value == "digitalWrite"):
-                port = None
-                bit = None
-                value = self.tokens[index + 1].value
-                # 0 - OFF / 1 - ON
-                direction = self.tokens[index + 3].value
-                for k in list(pinout.keys()):
-                    if (value in pinout[k]):
-                        bit = pinout[k].index(value)
-                        port = k
-                        break
-                if (port == None and bit == None):
-                    print("Este pino nao existe")
-                    exit(1)
-                if (direction == "0"):
-                    self.instructions.append(
-                        self.device.CBI(f"PIN{port}", bit))
-                elif (direction == "1"):
-                    self.instructions.append(
-                        self.device.SBI(f"PIN{port}", bit))
+    def arithmeticLogic(self):
+        # +, -, /, *
+        pass
 
-        def run():
-            index = 0
-            while index < len(self.tokens)-1:
-                pastToken = self.tokens[index-1]
-                currentToken = self.tokens[index]
-                nextToken = self.tokens[index]
+    def comparisonLogic(self):
+        # >, <, ...
+        pass
 
-                if (index < len(self.tokens)-1):
-                    nextToken = self.tokens[index+1]
+    def variableLogic(self):
+        pass
 
-                if (currentToken.type == "CODE BLOCK STARTER"):
-                    self.isInLoopContext += 1
-                    print(self.isInLoopContext)
+    def keywordLogic(self, keyword, condition, instructions):
+        if (keyword.value == "if"):
+            self.translator(instructions)
+        elif (keyword.value == "elseif"):
+            self.translator(instructions)
+        elif (keyword.value == "else"):
+            self.translator(instructions)
+        elif (keyword.value == "while"):
+            self.translator(instructions)
+        return ""
 
-                if (currentToken.type == "CODE BLOCK FINISHER"):
-                    nextLabel = "next_" + str(self.loopCounter) + ":"
-                    self.isInLoopContext -= 1
-                    print(self.isInLoopContext)
+    def hardwareLogic(self):
+        pass
 
-                    if (len(self.conditionsElements) == 1):
-                        self.instructions.append(self.device.BRNE(
-                            "next_" + str(self.loopCounter)))
-                    else:
-                        if (self.conditionsElements[1].value == '>'):
-                            self.instructions.append(self.device.BRLE(
-                                "next_" + str(self.loopCounter)))
-                        elif (self.conditionsElements[1].value == '<'):
-                            self.instructions.append(self.device.BRGE(
-                                "next_" + str(self.loopCounter)))
-                        elif (self.conditionsElements[1].value == '>='):
-                            self.instructions.append(self.device.BRLO(
-                                "next_" + str(self.loopCounter)))
-                        elif (self.conditionsElements[1].value == '<='):
-                            self.instructions.append(self.device.BRSH(
-                                "next_" + str(self.loopCounter)))
-                        elif (self.conditionsElements[1].value == '=='):
-                            self.instructions.append(self.device.BRNE(
-                                "next_" + str(self.loopCounter)))
-                        elif (self.conditionsElements[1].value == '!='):
-                            self.instructions.append(self.device.BREQ(
-                                "next_" + str(self.loopCounter)))
+    def translator(self, instructions):
+        # Retorna uma string que sera o codigo
+        code = ""
+        pos = 0
+        print(" ".join([i.value for i in instructions]))
+        while (pos < len(instructions)):
+            # Separa cada instrucao
+            pastInstruction = instructions[pos-1]
+            currentInstruction = instructions[pos]
+            nextInstruction = None
+            if (pos < len(instructions) - 1):
+                nextInstruction = instructions[pos+1]
+            # Compara tipo de instrucao
+            if (currentInstruction.type == "KEYWORD"):
+                condition, pos = self.getCondition(instructions, pos)
+                keywordInstructions, pos = self.getScope(instructions, pos)
+                self.keywordLogic(currentInstruction,
+                                  condition, keywordInstructions)
+            # Vai para a proxima instrucao
+            pos += 1
+        return code
 
-                    self.instructions.append(self.device.RJMP(
-                        "while_" + str(self.loopCounter)))
-                    self.instructions.append(nextLabel)
-
-                if (pastToken.type == "DATATYPE" and currentToken.type == "IDENTIFIER"):
-                    createVariable(currentToken.value)
-
-                if (currentToken.type == "HARDWARE SETUP" or currentToken.type == "HARDWARE INTERACTION"):
-                    getHardware(index)
-
-                if (currentToken.type == "KEYWORD"):
-                    if (currentToken.value == "if"):
-                        pass
-                        # # Ler condição, começa em ( e termina )
-                        # elementsList = []
-                        # index += 2
-                        # while (self.tokens[index].type != "FUNCTION ARGUMENT FINISHER"):
-                        #     elementsList.append(self.tokens[index])
-                        #     index += 1
-                        # var1 = elementsList[0]
-                        # var2 = elementsList[-1]
-                        # comparison = elementsList[1:-1]
-                        # comparisonText = "".join([e.value for e in comparison])
-                        # # CPI
-                        # if (comparisonText == ">="):
-                        #     # ADD NAS INSTRUCOES O BGL
-                        #     pass
-                        # Criar novo código de bloco
-                    elif (currentToken.value == "elseif"):
-                        pass
-                    elif (currentToken.value == "else"):
-                        pass
-                    elif (currentToken.value == "while"):
-                        self.loopCounter += 1
-                        contextName = "while_" + str(self.loopCounter) + ":"
-                        index += 2
-                        while (self.tokens[index].type != "FUNCTION ARGUMENT FINISHER"):
-                            self.conditionsElements.append(self.tokens[index])
-                            index += 1
-                        index += 1
-
-                        firstReg = self.device.getRegister()
-                        secondReg = self.device.getRegister()
-                        if (len(self.conditionsElements) == 1):
-                            if (self.conditionsElements[0].value == "true"):
-                                self.instructions.append(
-                                    self.device.LDI(firstReg, 1))
-                                self.instructions.append(
-                                    self.device.LDI(secondReg, 1))
-                            elif (self.conditionsElements[0].value == "false"):
-                                self.instructions.append(
-                                    self.device.LDI(firstReg, 1))
-                                self.instructions.append(
-                                    self.device.LDI(secondReg, 2))
-                        else:
-                            if (self.conditionsElements[0].value.isdigit()):
-                                self.instructions.append(
-                                    self.device.LDI(firstReg, self.conditionsElements[0].value))
-                            else:
-                                getVarInMem(self.conditionsElements[0].value)
-                                firstReg = self.variableLogs[self.conditionsElements[0].value]['reg']
-
-                            if (self.conditionsElements[2].value.isdigit()):
-                                self.instructions.append(
-                                    self.device.LDI(secondReg, self.conditionsElements[2].value))
-                            else:
-                                getVarInMem(self.conditionsElements[2].value)
-                                firstReg = self.variableLogs[self.conditionsElements[2].value]['reg']
-
-                        self.instructions.append(contextName)
-                        self.instructions.append(
-                            self.device.CP(firstReg, secondReg))
-
-                if (currentToken.type == "OPERATOR"):
-                    if (currentToken.value == "="):
-                        # Ler tudo para frente até ";"
-                        # Verificar tamanho, se for 1, é apenas uma atribuição simples
-                        # Se for mais de um, identificar quais são os operadores
-                        # Fazer operações partindo do primeiro operador com o elemento anterior e o posterior
-                        # Na proxima operação, pegar o resultado da operação anterior
-                        elementsList = []
-                        index += 1
-                        while (self.tokens[index].type != "TERMINATOR"):
-                            elementsList.append(self.tokens[index])
-                            index += 1
-
-                        if (len(elementsList) != 1):
-                            numberResult = 0
-                            elementIndex = 0
-                            while elementIndex != (len(elementsList) - 1):
-                                if (elementIndex + 2) < len(elementsList) and elementsList[elementIndex + 2].value.isdigit():
-                                    arithOp = ""
-                                    for i in range(3):
-                                        if elementsList[elementIndex + i].value.isdigit():
-                                            arithOp += elementsList[elementIndex + i].value
-                                        elif elementsList[elementIndex + i].type == "ARITHMETIC OPERATOR":
-                                            arithOp += elementsList[elementIndex + i].value
-                                        else:
-                                            arithOp += self.variableLogs[elementsList[elementIndex + i].value]['value']
-                                    numberResult = math.floor(eval(arithOp))
-                                    del elementsList[elementIndex:(
-                                        elementIndex + 2)]
-                                    elementsList[elementIndex].value = str(
-                                        numberResult)
-
-                        if (len(elementsList) == 1):
-                            nextToken = elementsList[0]
-                            if (nextToken.value.isdigit()):
-                                saveVariableValue(
-                                    pastToken.value, nextToken.value)
-                            elif (nextToken.value.isalpha()):
-                                copyRegisters(pastToken.value, nextToken.value)
-                        elif (len(elementsList) == 3):
-                            arithOp = ""
-                            opVar = ""
-                            algorithmReg = self.device.getRegister()
-
-                            for e in elementsList:
-                                if e.value.isdigit():
-                                    self.instructions.append(
-                                        self.device.LDI(algorithmReg, e.value))
-                                elif e.type == "ARITHMETIC OPERATOR":
-                                    arithOp = e.value
-                                else:
-                                    opVar = e.value
-
-                            firstReg = 0
-                            secondReg = 0
-                            getVarInMem(opVar)
-                            if elementsList[0].value == opVar:
-                                firstReg = self.variableLogs[opVar]['reg']
-                                secondReg = algorithmReg
-                            else:
-                                firstReg = algorithmReg
-                                secondReg = self.variableLogs[opVar]['reg']
-                            if (arithOp == "+"):
-                                self.instructions.append(
-                                    self.device.ADD(firstReg, secondReg))
-                                saveVarInMem(pastToken.value, firstReg)
-                            elif (arithOp == "-"):
-                                self.instructions.append(
-                                    self.device.SUB(firstReg, secondReg))
-                                saveVarInMem(pastToken.value, firstReg)
-                index += 1
-        run()
+    # == Main == #
 
     def add(self, datatype):
         self.tokens.append(datatype)
 
-    def getCode(self, device):
+    def run(self, device):
         self.device = device
-        self._translate()       # Cria lista de instructions
-        code = "start:\n"
-        for i in self.setupInstructions:
-            code += f"{i}\n"
-        code += f"main:\n"
-        for i in self.instructions:
-            code += f"{i}\n"
+        code = self.translator(self.tokens)
+        # self.varLog.printLog()
         return code

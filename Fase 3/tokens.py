@@ -1,5 +1,5 @@
 from file import File
-from data_type import DataType
+from instruction import Instruction
 from interpreter import Interpreter
 
 # == Variables == #
@@ -57,9 +57,9 @@ def _findTokens(c):
                     char = seeNextPos(line, pos)
                     pos += 1
                 if ("." in num):
-                    interpreter.add(DataType("FLOAT", num, scope_depth))
+                    interpreter.add(Instruction("FLOAT", num, scope_depth))
                 else:
-                    interpreter.add(DataType("INT", num, scope_depth))
+                    interpreter.add(Instruction("INT", num, scope_depth))
             # Caso seja um texto, faz diversas verificações
             elif char.isalpha():
                 id = ""
@@ -69,74 +69,76 @@ def _findTokens(c):
                     pos += 1
                 # Se for um keyword, salva na lista como KEYWORD
                 if id in keywords:
-                    interpreter.add(DataType("KEYWORD", id, scope_depth))
+                    interpreter.add(Instruction("KEYWORD", id, scope_depth))
                 # Se for um boolean, salva na lista como BOOLEAN
                 elif id in bool:
-                    interpreter.add(DataType("BOOL", id, scope_depth))
+                    interpreter.add(Instruction("BOOL", id, scope_depth))
                 # Se for um endpoint, salva na lista como ENDPOINT
                 elif id in endpoints:
-                    interpreter.add(DataType("ENDPOINT", id, scope_depth))
-                # Se for um datatype, salva na lista como DATATYPE
+                    interpreter.add(Instruction("ENDPOINT", id, scope_depth))
+                # Se for um Instruction, salva na lista como Instruction
                 elif id in datatypes:
-                    interpreter.add(DataType("DATATYPE", id, scope_depth))
+                    interpreter.add(Instruction(
+                        "DATATYPE", id, scope_depth))
                 # Se for um hardware interaction, salva na lista como HARDWARE INTERACTION
                 elif id in hardwareSetup:
                     interpreter.add(
-                        DataType("HARDWARE SETUP", id, scope_depth))
+                        Instruction("HARDWARE SETUP", id, scope_depth))
                 elif id in hardwareInteractions:
                     interpreter.add(
-                        DataType("HARDWARE INTERACTION", id, scope_depth))
+                        Instruction("HARDWARE INTERACTION", id, scope_depth))
                 # Se não atender nenhum caso anterior, é um IDENTIFIER (variáveis)
                 else:
-                    interpreter.add(DataType("IDENTIFIER", id, scope_depth))
+                    interpreter.add(Instruction("IDENTIFIER", id, scope_depth))
             # Se for uma virgula, salva como VIRGULA
             elif char in virgula:
-                interpreter.add(DataType("VIRGULA", char, scope_depth))
+                interpreter.add(Instruction("VIRGULA", char, scope_depth))
                 pos += 1
             # Se for um ponto, salva na lista como FLOATING POINT
             elif char in floatingPoint:
-                interpreter.add(DataType("FLOATING POINT", char, scope_depth))
+                interpreter.add(Instruction(
+                    "FLOATING POINT", char, scope_depth))
                 pos += 1
             # Se for um ponto e vírgula, salva na lista como TERMINATOR
             elif char in terminator:
-                interpreter.add(DataType("TERMINATOR", char, scope_depth))
+                interpreter.add(Instruction("TERMINATOR", char, scope_depth))
                 pos += 1
             # Se for alguma estrutura
             elif char in codeBlockStarter:
                 scope_depth += 1
                 interpreter.add(
-                    DataType("CODE BLOCK STARTER", char, scope_depth))
+                    Instruction("CODE BLOCK STARTER", char, scope_depth))
                 pos += 1
             elif char in codeBlockFinisher:
                 scope_depth -= 1
                 interpreter.add(
-                    DataType("CODE BLOCK FINISHER", char, scope_depth))
+                    Instruction("CODE BLOCK FINISHER", char, scope_depth))
                 pos += 1
             elif char in funcArgumentStarter:
                 interpreter.add(
-                    DataType("FUNCTION ARGUMENT STARTER", char, scope_depth))
+                    Instruction("FUNCTION ARGUMENT STARTER", char, scope_depth))
                 pos += 1
             elif char in funcArgumentFinisher:
                 interpreter.add(
-                    DataType("FUNCTION ARGUMENT FINISHER", char, scope_depth))
+                    Instruction("FUNCTION ARGUMENT FINISHER", char, scope_depth))
                 pos += 1
             elif char in arrayStarter:
                 interpreter.add(
-                    DataType("ARRAY STARTER", char, scope_depth))
+                    Instruction("ARRAY STARTER", char, scope_depth))
                 pos += 1
             elif char in arrayFinisher:
                 interpreter.add(
-                    DataType("ARRAY FINISHER", char, scope_depth))
+                    Instruction("ARRAY FINISHER", char, scope_depth))
                 pos += 1
             # Verifica operadores gerais
             elif char in comparisons:
                 # Aqui é feita a verificação para operadores compostos (==, !=, >=, <=)
                 if (char == ">" or char == "<" or char == "=" or char == "!"):
-                    # Se a próxima posição for igual a =, é composto. Portanto add = ao char, e pula uma pos
+                    # Se a próxima posição for igual a =, é composto. Portanto, add = ao char, e pula uma pos
                     if (seeNextPos(line, pos) == "="):
                         char += "="
                         pos += 1
-                interpreter.add(DataType("COMPARISON", char, scope_depth))
+                interpreter.add(Instruction("COMPARISON", char, scope_depth))
                 pos += 1
             elif char in operators:
                 if (char == "=" or char == "!"):
@@ -144,17 +146,17 @@ def _findTokens(c):
                         char += "="
                         pos += 1
                         interpreter.add(
-                            DataType("COMPARISON", char, scope_depth))
+                            Instruction("COMPARISON", char, scope_depth))
                     else:
                         interpreter.add(
-                            DataType("OPERATOR", char, scope_depth))
+                            Instruction("OPERATOR", char, scope_depth))
                 else:
                     interpreter.add(
-                        DataType("OPERATOR", char, scope_depth))
+                        Instruction("OPERATOR", char, scope_depth))
                 pos += 1
             elif char in arithmetics:
                 interpreter.add(
-                    DataType("ARITHMETIC OPERATOR", char, scope_depth))
+                    Instruction("ARITHMETIC OPERATOR", char, scope_depth))
                 pos += 1
             else:
                 break

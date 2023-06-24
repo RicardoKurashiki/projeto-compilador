@@ -1,0 +1,25 @@
+{
+    int x;
+    int y;
+    int z;
+
+    x = 5;
+    y = 3;
+
+    if (x == y)
+    {
+        if (y == 3)
+        {
+            y = 6;
+        }
+        z = 1;
+    }
+    elseif (x > y)
+    {
+        z = 2;
+    }
+    else
+    {
+        z = 3;
+    }
+}
