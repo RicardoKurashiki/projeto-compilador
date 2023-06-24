@@ -2,7 +2,6 @@ from arduino import Arduino
 from variable_log import VariableLog
 
 
-
 class Interpreter:
     def __init__(self):
         self.tokens = []                # Tokens separados do txt
@@ -157,15 +156,19 @@ class Interpreter:
             self.counter.addIf()
             code.append(f"if_stat{self.counter.getIf()}:")
             result = self.translator(instructions)
+            code.append(self.device.RJMP(f"end_if{self.counter.getIf()}"))
         elif (keyword.value == "elseif"):
             code.append(f"elseif_stat{self.counter.getIf()}:")
             result = self.translator(instructions)
+            code.append(self.device.RJMP(f"end_if{self.counter.getIf()}"))
         elif (keyword.value == "else"):
             code.append(f"else_stat{self.counter.getIf()}:")
             result = self.translator(instructions)
+            code.append(self.device.RJMP(f"end_if{self.counter.getIf()}"))
         elif (keyword.value == "while"):
             self.counter.addWhile()
             result = self.translator(instructions)
+            code.append(self.device.RJMP(f"end_while{self.counter.getWhile()}"))
         self.counter.printDebug()
         code.extend(result)
         if (keyword.value in ["if", "elseif", "else"] and isEnd):
@@ -208,9 +211,15 @@ class Interpreter:
     def run(self, device):
         self.device = device
         code = self.translator(self.tokens)
+        for _ in range(0, 50):
+            print()
         for c in code:
             print(c)
-            print("...")
+            if ("end" not in c):
+                print("...")
+        print("...")
+        for _ in range(0, 50):
+            print()
         # self.varLog.printLog()
         return code
 
@@ -223,15 +232,15 @@ class Counter:
         self.while_total = 0
         self.if_stack = []
         self.while_stack = []
-    
+
     def addIf(self):
-        self.if_counter += 1
         self.if_total += 1
+        self.if_counter = self.if_total
         self.if_stack.append(self.if_counter)
-    
+
     def addWhile(self):
-        self.while_counter += 1
         self.while_total += 1
+        self.while_counter = self.while_total
         self.while_stack.append(self.while_counter)
 
     def getIf(self):
