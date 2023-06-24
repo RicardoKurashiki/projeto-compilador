@@ -255,27 +255,34 @@ class Interpreter:
     def keywordLogic(self, keyword, condition, instructions, isEnd = True):
         code = []
         labelName = None
-        if (keyword.value == "if"):
-            self.counter.addIf()
-            labelName = f"if_{self.counter.getIf()}"
-            self.code.addLabel(labelName)
-            self.translator(instructions, labelName)
-        elif (keyword.value == "elseif"):
-            self.counter.addElseif()
-            labelName = f"elseif_{self.counter.getIf()}{self.counter.getElseif()}" # Vai ser diferente
-            self.code.addLabel(labelName)
-            self.translator(instructions, labelName)
-        elif (keyword.value == "else"):
-            labelName = f"else_{self.counter.getIf()}"
-            self.code.addLabel(labelName)
-            self.translator(instructions, labelName)
-        elif (keyword.value == "while"):
-            labelName = f"while_{self.counter.getWhile()}"
-            self.code.addLabel(labelName)
-            self.translator(instructions, labelName)
-        if (isEnd):
-            self.counter.resetElseif()
-            self.counter.removeIf()
+        # Realizar o código para a condicao
+        if (keyword.value == "for"):
+            pass
+        else:
+            if (keyword.value == "if"):
+                self.counter.addIf()
+                labelName = f"if_{self.counter.getIf()}"
+                self.code.addLabel(labelName)
+                self.translator(instructions, labelName)
+            elif (keyword.value == "elseif"):
+                self.counter.addElseif()
+                labelName = f"elseif_{self.counter.getIf()}{self.counter.getElseif()}" # Vai ser diferente
+                self.code.addLabel(labelName)
+                self.translator(instructions, labelName)
+            elif (keyword.value == "else"):
+                labelName = f"else_{self.counter.getIf()}"
+                self.code.addLabel(labelName)
+                self.translator(instructions, labelName)
+            elif (keyword.value == "while"):
+                labelName = f"while_{self.counter.getWhile()}"
+                self.code.addLabel(labelName)
+                self.translator(instructions, labelName)
+            if (isEnd):
+                if (keyword.value in ['if', 'else', 'elseif']):
+                    self.counter.resetElseif()
+                    self.counter.removeIf()
+                else:
+                    self.counter.removeWhile()
 
     def translator(self, instructions, labelName = "main"):
         pos = 0
