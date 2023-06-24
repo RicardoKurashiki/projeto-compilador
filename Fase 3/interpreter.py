@@ -160,7 +160,7 @@ class Interpreter:
 
         if (targetVar != None):
             memAddress = self.varLog.getMem(targetVar)
-            outputCommands.append(self.device.STS(readRegister, memAddress))
+            outputCommands.append(self.device.STS(memAddress,readRegister))
 
         return outputCommands
 
@@ -276,7 +276,6 @@ class Interpreter:
         if (isEnd):
             self.counter.resetElseif()
             self.counter.removeIf()
-
 
     def translator(self, instructions, labelName = "main"):
         pos = 0

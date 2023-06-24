@@ -29,6 +29,8 @@ class Code:
             code += f"{label}:\n"
             code += "\n".join(self.code[label])
             code += "\n"
+            if (label == "main"):
+                code += "RET\n"
         return code
 
     def printDebug(self):

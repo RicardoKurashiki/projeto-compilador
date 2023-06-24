@@ -4,12 +4,15 @@
     int z;
 
     pinMode 13, 1;
+    pinMode 2, 0;
 
     x = 5;
     y = 2;
 
     z = x + y;
     z = x - y;
+
+    z = digitalRead 2;
 
     digitalWrite 13, 1;
 }
