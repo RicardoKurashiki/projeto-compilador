@@ -60,6 +60,26 @@
             digitalWrite 8, 0;
             digitalWrite 9, 1;
         }
+        elseif (counter == 4)
+        {
+            digitalWrite 3, 0;
+            digitalWrite 4, 1;
+            digitalWrite 5, 1;
+            digitalWrite 6, 0;
+            digitalWrite 7, 0;
+            digitalWrite 8, 1;
+            digitalWrite 9, 1;
+        }
+        elseif (counter == 5)
+        {
+            digitalWrite 3, 1;
+            digitalWrite 4, 0;
+            digitalWrite 5, 1;
+            digitalWrite 6, 1;
+            digitalWrite 7, 0;
+            digitalWrite 8, 1;
+            digitalWrite 9, 1;
+        }
         else
         {
             counter = 1;
