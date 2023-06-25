@@ -115,6 +115,9 @@ class Arduino:
 
     def SBIC(self, port, bit):
         return f"SBIC {port}, {bit}"
+    
+    def CPSE(self, rx, ry): # Skip next command if ==
+        return f"CPSE {rx}, {ry}"
 
     # Instructions - Data copy and load instructions
     def MOV(self, rx, ry):

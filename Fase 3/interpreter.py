@@ -1,6 +1,7 @@
 from arduino import Arduino
 from variable_log import VariableLog
 from code import Code
+from instruction import Instruction
 
 class Interpreter:
     def __init__(self):
@@ -155,14 +156,26 @@ class Interpreter:
 
     def digitalPortWrite(self, pin, value):
         # TODO: Fazer digitalWrite com variáveis
-        outputCommand = ""
+        outputCommand = []
         port, bit = self.device.getPinout(pin)
         port = "PORT" + port
 
-        if (value == "0"):
-            outputCommand = self.device.CBI(port, bit)
+        if (value.isdigit()):
+            if (value == "0"):
+                outputCommand.append(self.device.CBI(port, bit))
+            else:
+                outputCommand.append(self.device.SBI(port, bit))
         else:
-            outputCommand = self.device.SBI(port, bit)
+            varAddress = self.varLog.getMem(value)
+            varRegister = self.device.getRegister()
+            constRegister = self.device.getRegister()
+            outputCommand.append(self.device.LDS(varRegister, varAddress))
+            outputCommand.append(self.device.LDI(constRegister, "0"))
+            outputCommand.append(self.device.CPSE(varRegister, constRegister))
+            outputCommand.append(self.device.SBI(port, bit))
+            outputCommand.append(self.device.LDI(constRegister, "1"))
+            outputCommand.append(self.device.CPSE(varRegister, constRegister))
+            outputCommand.append(self.device.CBI(port, bit))
 
         return outputCommand
 
@@ -189,22 +202,29 @@ class Interpreter:
             outputCommand.append(self.device.ADD(reg1, reg2))
         elif (op == "-"):
             outputCommand.append(self.device.SUB(reg1, reg2))
+        elif (op == "&"):
+            outputCommand.append(self.device.AND(reg1, reg2))
+        elif (op == "|"):
+            outputCommand.append(self.device.OR(reg1, reg2))
 
         return outputCommand
 
 
     # == Funcoes Principais == #
 
-    def arithmeticLogic(self, instructions, pos, labelName):
+    def arithmeticLogic(self, instructions, pos, labelName, hasTerminator=True):
         targetVar = instructions[pos - 1].value
         targetAdd = self.varLog.getMem(targetVar)
         tokensAfter = []
         index = 1
         commands = []
 
-        while (instructions[pos + index].type != "TERMINATOR"):
-            tokensAfter.append(instructions[pos + index])
-            index += 1
+        if (hasTerminator):
+            while (instructions[pos + index].type != "TERMINATOR"):
+                tokensAfter.append(instructions[pos + index])
+                index += 1
+        else:
+            tokensAfter.extend(instructions[pos + 1:])
 
         receiverRegister = self.device.getRegister()
         auxRegister = self.device.getRegister()
@@ -229,22 +249,37 @@ class Interpreter:
         commands.append(self.device.STS(targetAdd, receiverRegister))
         self.code.addInstructions(labelName, commands)
 
-    def variableLogic(self, instructions, pos, labelName):
+    def variableLogic(self, instructions, pos, labelName, hasTerminator=True):
         targetVar = instructions[pos - 1].value
         targetAdd = self.varLog.getMem(targetVar)
         tokensAfter = []
         index = 1
         commands = []
 
-        while (instructions[pos + index].type != "TERMINATOR"):
-            tokensAfter.append(instructions[pos + index])
-            index += 1
+        if (hasTerminator):
+            while (instructions[pos + index].type != "TERMINATOR"):
+                tokensAfter.append(instructions[pos + index])
+                index += 1
+        else:
+            tokensAfter.extend(instructions[pos+1:])
 
         if (len(tokensAfter) == 1):
             # x = const;
             if (tokensAfter[0].value.isdigit()):
                 auxRegister = self.device.getRegister()
                 commands.append(self.device.LDI(auxRegister, tokensAfter[0].value))
+                commands.append(self.device.STS(targetAdd, auxRegister))
+                auxRegister = self.device.removeRegister(auxRegister)
+            # x = true;
+            elif (tokensAfter[0].value == "true"):
+                auxRegister = self.device.getRegister()
+                commands.append(self.device.LDI(auxRegister, "1"))
+                commands.append(self.device.STS(targetAdd, auxRegister))
+                auxRegister = self.device.removeRegister(auxRegister)
+            # x = false;
+            elif (tokensAfter[0].value == "false"):
+                auxRegister = self.device.getRegister()
+                commands.append(self.device.LDI(auxRegister, "0"))
                 commands.append(self.device.STS(targetAdd, auxRegister))
                 auxRegister = self.device.removeRegister(auxRegister)
             # x = y;
@@ -263,17 +298,52 @@ class Interpreter:
                     commands.extend(outputCmds)
             # x = y + 5 - 2;
             else:
-                self.arithmeticLogic(instructions, pos, labelName)
+                self.arithmeticLogic(instructions, pos, labelName, hasTerminator)
 
         self.code.addInstructions(labelName, commands)
 
-    def keywordLogic(self, keyword, condition, instructions, currentLabelName,isEnd = True):
+    def keywordLogic(self, keyword, condition, instructions, currentLabelName, isEnd = True):
         code = []
         labelName = None
         # Realizar o código para a condicao
         if (keyword.value == "for"):
-            # TODO: Fazer lógica do for
-            pass
+            attribution = []
+            conditional = []
+            action = []
+            index = 0
+            while (condition[index].type != "TERMINATOR"):
+                attribution.append(condition[index])
+                index += 1
+            index += 1
+            while (condition[index].type != "TERMINATOR"):
+                conditional.append(condition[index])
+                index += 1
+            index += 1
+            action.extend(condition[index:])
+            self.counter.addFor()
+            labelName = f"for_{self.counter.getFor()}"
+            # Atribuicao do valor na variavel
+            self.variableLogic(attribution, 1, currentLabelName, hasTerminator=False)
+            # Cria o RJMP para o for
+            self.code.addInstructions(currentLabelName, [self.device.RJMP(labelName)])
+            # Cria o endfor_id
+            self.code.addInstructions(currentLabelName, [f"endfor_{self.counter.getFor()}:"])
+            # Cria a label do for
+            self.code.addLabel(labelName)
+            # Realiza a verificacao da condicao
+            if (len(conditional) == 1):
+                loadConditionsCmd = self.loadConditions(conditional[0].value)
+                comparisonCmd = self.getInvertedBranch("==", f"endfor_{self.counter.getFor()}")
+            else:
+                loadConditionsCmd = self.loadConditions(conditional[0].value, conditional[2].value)
+                comparisonCmd = self.getInvertedBranch(conditional[1].value, f"endfor_{self.counter.getFor()}")
+            self.code.addInstructions(labelName, loadConditionsCmd)
+            self.code.addInstructions(labelName, [comparisonCmd])
+            self.translator(instructions, labelName)
+            # Realiza a acao antes de retornar para o loop
+            self.variableLogic(action, 1, labelName, hasTerminator=False)
+            self.code.addInstructions(labelName, [self.device.RJMP(labelName)])
+            self.counter.removeFor()
         elif (keyword.value == "while"):
             self.counter.addWhile()
             labelName = f"while_{self.counter.getWhile()}"
@@ -363,7 +433,7 @@ class Interpreter:
                     pin = instructions[pos+1].value
                     value = instructions[pos+3].value
                     writeCmd = self.digitalPortWrite(pin, value)
-                    self.code.addInstructions(labelName, [writeCmd])
+                    self.code.addInstructions(labelName, writeCmd)
                     pos += 3
             # == OPERATORS == #
             elif (currentInstruction.type == "OPERATOR"):
@@ -410,6 +480,24 @@ class Counter:
         self.whileLog = [0]
         self.whileDepth = 0
         self.whileOpenClose = []
+        self.forLog = [0]
+        self.forDepth = 0
+        self.forOpenClose = []
+
+    def addFor(self):
+        if (self.forDepth > len(self.forLog) - 1):
+            self.forLog.append(0)
+        self.forLog[self.forDepth] += 1
+        self.forDepth += 1
+        self.forOpenClose.clear()
+        self.forOpenClose.extend(self.forLog)
+
+    def removeFor(self):
+        self.forOpenClose.pop()
+        self.forDepth -= 1
+
+    def getFor(self):
+        return "_".join([str(i) for i in self.forOpenClose])
 
     def addWhile(self):
         if (self.whileDepth > len(self.whileLog) - 1):
@@ -420,8 +508,6 @@ class Counter:
         self.whileOpenClose.extend(self.whileLog)
 
     def removeWhile(self):
-        print(self.whileOpenClose)
-        print(self.whileDepth)
         self.whileOpenClose.pop()
         self.whileDepth -= 1
 
