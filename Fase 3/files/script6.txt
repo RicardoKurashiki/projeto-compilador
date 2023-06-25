@@ -1,0 +1,16 @@
+{
+    int counter;
+    int buttonStatus;
+
+    pinMode 2, 0;
+    pinMode 13, 1;
+
+    counter = 0;
+
+    while (true)
+    {
+        buttonStatus = digitalRead 2;
+        digitalWrite 13, buttonStatus;
+    }
+    digitalWrite 13, 0;
+}

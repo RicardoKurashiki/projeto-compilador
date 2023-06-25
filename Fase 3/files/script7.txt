@@ -1,0 +1,16 @@
+{
+    pinMode 13, 1;
+    int x; 
+
+    x = 255;
+    x = x & 1;
+
+    if (x == 1)
+    {
+        digitalWrite 13, 0;
+    }
+    else
+    {
+        digitalWrite 13, 1;
+    }
+}
