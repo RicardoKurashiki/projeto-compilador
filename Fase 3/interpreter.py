@@ -17,66 +17,68 @@ class Interpreter:
         outputInstructions = []
         firstTermReg = self.device.getRegister()
         secondTermReg = self.device.getRegister()
-        if (firstTerm == "true"):
-            # Carrega número no registrador 1
-            outputInstructions.append(self.device.LDI(firstTermReg, "1"))
-            # Carrega número no registrador 2
-            outputInstructions.append(
-                self.device.LDI(secondTermReg, "1"))
-            # Realiza a comparação
-            outputInstructions.append(
-                self.device.CP(firstTermReg, secondTermReg))
-        elif (firstTerm == "false"):
-            # Carrega número no registrador 1
-            outputInstructions.append(self.device.LDI(firstTermReg, "1"))
-            # Carrega número no registrador 2
-            outputInstructions.append(
-                self.device.LDI(secondTermReg, "0"))
-            # Realiza a comparação
-            outputInstructions.append(
-                self.device.CP(firstTermReg, secondTermReg))
-        elif (firstTerm.isdigit() and secondTerm.isdigit()):
-            # Carrega número no registrador 1
-            outputInstructions.append(self.device.LDI(firstTermReg, firstTerm))
-            # Carrega número no registrador 2
-            outputInstructions.append(
-                self.device.LDI(secondTermReg, secondTerm))
-            # Realiza a comparação
-            outputInstructions.append(
-                self.device.CP(firstTermReg, secondTermReg))
-        elif (firstTerm.isdigit() and not secondTerm.isdigit()):
-            # Carrega número no registrador 1
-            outputInstructions.append(self.device.LDI(firstTermReg, firstTerm))
-            # Carrega da memória o valor da variável no registrador 2
-            memAddress = self.varLog.getMem(secondTerm)
-            outputInstructions.append(
-                self.device.LDS(secondTermReg, memAddress))
-            # Realiza a comparação
-            outputInstructions.append(
-                self.device.CP(firstTermReg, secondTermReg))
-        elif (not firstTerm.isdigit() and secondTerm.isdigit()):
-            # Carrega na memária o valor da variável no registrador 1
-            memAddress = self.varLog.getMem(firstTerm)
-            outputInstructions.append(
-                self.device.LDS(firstTermReg, memAddress))
-            # Carrega número no registrador 2
-            outputInstructions.append(
-                self.device.LDI(secondTermReg, secondTerm))
-            # Realiza a comparação
-            outputInstructions.append(
-                self.device.CP(firstTermReg, secondTermReg))
+        if (secondTerm == None):
+            if (firstTerm == "false" or firstTerm == "0"):
+                # Carrega número no registrador 1
+                outputInstructions.append(self.device.LDI(firstTermReg, "1"))
+                # Carrega número no registrador 2
+                outputInstructions.append(
+                    self.device.LDI(secondTermReg, "0"))
+                # Realiza a comparação
+                outputInstructions.append(
+                    self.device.CP(firstTermReg, secondTermReg))
+            elif (firstTerm == "true" or firstTerm == "1"):
+                # Carrega número no registrador 1
+                outputInstructions.append(self.device.LDI(firstTermReg, "1"))
+                # Carrega número no registrador 2
+                outputInstructions.append(
+                    self.device.LDI(secondTermReg, "1"))
+                # Realiza a comparação
+                outputInstructions.append(
+                    self.device.CP(firstTermReg, secondTermReg))
         else:
-            # Carrega na memária o valor da variável no registrador 1
-            memAddress = self.varLog.getMem(firstTerm)
-            outputInstructions.append(
-                self.device.LDS(firstTermReg, memAddress))
-            # Carrega na memária o valor da variável no registrador 2
-            memAddress = self.varLog.getMem(secondTerm)
-            outputInstructions.append(
-                self.device.LDS(secondTermReg, memAddress))
-            # Realiza a comparação
-            outputInstructions.append(
-                self.device.CP(firstTermReg, secondTermReg))
+            if (firstTerm.isdigit() and secondTerm.isdigit()):
+                # Carrega número no registrador 1
+                outputInstructions.append(self.device.LDI(firstTermReg, firstTerm))
+                # Carrega número no registrador 2
+                outputInstructions.append(
+                    self.device.LDI(secondTermReg, secondTerm))
+                # Realiza a comparação
+                outputInstructions.append(
+                    self.device.CP(firstTermReg, secondTermReg))
+            elif (firstTerm.isdigit() and not secondTerm.isdigit()):
+                # Carrega número no registrador 1
+                outputInstructions.append(self.device.LDI(firstTermReg, firstTerm))
+                # Carrega da memória o valor da variável no registrador 2
+                memAddress = self.varLog.getMem(secondTerm)
+                outputInstructions.append(
+                    self.device.LDS(secondTermReg, memAddress))
+                # Realiza a comparação
+                outputInstructions.append(
+                    self.device.CP(firstTermReg, secondTermReg))
+            elif (not firstTerm.isdigit() and secondTerm.isdigit()):
+                # Carrega na memária o valor da variável no registrador 1
+                memAddress = self.varLog.getMem(firstTerm)
+                outputInstructions.append(
+                    self.device.LDS(firstTermReg, memAddress))
+                # Carrega número no registrador 2
+                outputInstructions.append(
+                    self.device.LDI(secondTermReg, secondTerm))
+                # Realiza a comparação
+                outputInstructions.append(
+                    self.device.CP(firstTermReg, secondTermReg))
+            else:
+                # Carrega na memária o valor da variável no registrador 1
+                memAddress = self.varLog.getMem(firstTerm)
+                outputInstructions.append(
+                    self.device.LDS(firstTermReg, memAddress))
+                # Carrega na memária o valor da variável no registrador 2
+                memAddress = self.varLog.getMem(secondTerm)
+                outputInstructions.append(
+                    self.device.LDS(secondTermReg, memAddress))
+                # Realiza a comparação
+                outputInstructions.append(
+                    self.device.CP(firstTermReg, secondTermReg))
         self.device.removeRegister(firstTermReg)
         self.device.removeRegister(secondTermReg)
         return outputInstructions
@@ -176,6 +178,8 @@ class Interpreter:
             outputCommand.append(self.device.LDI(constRegister, "1"))
             outputCommand.append(self.device.CPSE(varRegister, constRegister))
             outputCommand.append(self.device.CBI(port, bit))
+            self.device.removeRegister(varRegister)
+            self.device.removeRegister(constRegister)
 
         return outputCommand
 
@@ -193,7 +197,8 @@ class Interpreter:
         if (targetVar != None):
             memAddress = self.varLog.getMem(targetVar)
             outputCommands.append(self.device.STS(memAddress,readRegister))
-
+        self.device.removeRegister(readRegister)
+        
         return outputCommands
 
     def getOperation(self, reg1, reg2, op):
@@ -248,6 +253,8 @@ class Interpreter:
 
         commands.append(self.device.STS(targetAdd, receiverRegister))
         self.code.addInstructions(labelName, commands)
+        self.device.removeRegister(receiverRegister)
+        self.device.removeRegister(auxRegister)
 
     def variableLogic(self, instructions, pos, labelName, hasTerminator=True):
         targetVar = instructions[pos - 1].value
@@ -269,26 +276,26 @@ class Interpreter:
                 auxRegister = self.device.getRegister()
                 commands.append(self.device.LDI(auxRegister, tokensAfter[0].value))
                 commands.append(self.device.STS(targetAdd, auxRegister))
-                auxRegister = self.device.removeRegister(auxRegister)
+                self.device.removeRegister(auxRegister)
             # x = true;
             elif (tokensAfter[0].value == "true"):
                 auxRegister = self.device.getRegister()
                 commands.append(self.device.LDI(auxRegister, "1"))
                 commands.append(self.device.STS(targetAdd, auxRegister))
-                auxRegister = self.device.removeRegister(auxRegister)
+                self.device.removeRegister(auxRegister)
             # x = false;
             elif (tokensAfter[0].value == "false"):
                 auxRegister = self.device.getRegister()
                 commands.append(self.device.LDI(auxRegister, "0"))
                 commands.append(self.device.STS(targetAdd, auxRegister))
-                auxRegister = self.device.removeRegister(auxRegister)
+                self.device.removeRegister(auxRegister)
             # x = y;
             else:
                 originMemAdd = self.varLog.getMem(tokensAfter[0].value)
                 auxRegister = self.device.getRegister()
                 commands.append(self.device.LDS(auxRegister, originMemAdd))
                 commands.append(self.device.STS(targetAdd, auxRegister))
-                auxRegister = self.device.removeRegister(auxRegister)
+                self.device.removeRegister(auxRegister)
         else:
             # x = digitalRead pin;
             if (tokensAfter[0].type == "HARDWARE INTERACTION"):
@@ -388,12 +395,6 @@ class Interpreter:
                 self.translator(instructions, labelName)
                 self.code.addInstructions(labelName,
                                          [self.device.RJMP(f"endif_{self.counter.getIf()}")])
-            if (isEnd):
-                self.code.addInstructions(currentLabelName, [f"endif_{self.counter.getIf()}:"])
-                self.counter.resetElseif()
-                self.counter.removeIf()
-
-
             if (len(condition) == 1):
                 loadConditionsCmd = self.loadConditions(condition[0].value)
                 comparisonCmd = self.getBranch("==")
@@ -402,6 +403,12 @@ class Interpreter:
                 comparisonCmd = self.getBranch(condition[1].value, labelName)
             self.code.addInstructions(currentLabelName, loadConditionsCmd)
             self.code.addInstructions(currentLabelName, [comparisonCmd])
+            
+            if (isEnd):
+                self.code.addInstructions(currentLabelName, [f"endif_{self.counter.getIf()}:"])
+                self.counter.resetElseif()
+                self.counter.removeIf()
+
 
     def translator(self, instructions, labelName = "main"):
         pos = 0
@@ -447,7 +454,7 @@ class Interpreter:
                 keywordInstructions, pos = self.getScope(instructions, pos)
                 # Verifica se a condicional acaba ali caso seja IF/ELSE/ELSEIF
                 isEnd = True
-                if (pos + 1 < len(instructions) -1):
+                if (pos + 1 < len(instructions) - 1):
                     isEnd = instructions[pos + 1].value not in ['elseif', 'else']
                 # Faz a condicao dos keywords
                 self.keywordLogic(currentInstruction, condition,

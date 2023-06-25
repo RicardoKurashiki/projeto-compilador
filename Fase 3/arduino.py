@@ -9,7 +9,7 @@ pinout = {
 class Arduino:
     def __init__(self):
         self.max_mem = 2303
-        self.mem = 512
+        self.mem = 1024
         self.registers = {
             'R16': True,
             'R17': True,
@@ -35,12 +35,10 @@ class Arduino:
         return reg
 
     def setRegister(self, reg):
-        if (self.registers[reg]):
-            self.registers[reg] = False
+        self.registers[reg] = False
 
     def removeRegister(self, reg):
-        if (not self.registers[reg]):
-            self.registers[reg] = True
+        self.registers[reg] = True
 
     def getPinout(self, pin):
         # OUTPUT - 1
@@ -87,7 +85,7 @@ class Arduino:
 
     # Instructions - Jump instructions
     def RJMP(self, k):
-        return f"RJMP {k}"
+        return f"JMP {k}" # TODO: Verificar se n vai dar ruim
 
     def RET(self):
         return "RET"

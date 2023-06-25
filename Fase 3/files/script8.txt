@@ -1,0 +1,30 @@
+{
+    int x;
+    int y;
+    int currentState;
+    int prevState;
+
+    pinMode 2, 0;
+    pinMode 13, 1;
+
+    x = 0;
+    y = 10;
+
+    while (x < y)
+    {
+        currentState = digitalRead 2;
+        digitalWrite 13, currentState;
+
+        if (currentState == 1)
+        {
+            if (prevState == 0)
+            {
+                x = x + 1;
+            }
+        }
+
+        prevState = currentState;
+    }
+
+    digitalWrite 13, 0;
+}

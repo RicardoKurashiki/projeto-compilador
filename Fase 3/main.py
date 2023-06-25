@@ -14,7 +14,7 @@ if __name__ == "__main__":
     fileName = getFileName()
     device = Arduino()
     script = File(f"files/{fileName}.txt")              # Arquivo de Input
-    output = File(f"file_output.asm")                   # Arquivo de Output
+    output = File(f"output/{fileName}_output.asm")      # Arquivo de Output
     interpreter = tokens.run(script)
     result = interpreter.run(device)
     output.writeFile("")

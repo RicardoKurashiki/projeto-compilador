@@ -1,0 +1,51 @@
+#define __SFR_OFFSET 0
+#include "avr/io.h"
+.global hwSetup
+
+hwSetup:
+CBI DDRD, 2
+SBI DDRB, 5
+
+main:
+LDI R22, 20
+STS 0x400, R22
+LDS R18, 0x400
+LDI R31, 10
+SUB R18, R31
+LDI R31, 2
+ADD R18, R31
+LDI R31, 3
+ADD R18, R31
+LDI R31, 5
+ADD R18, R31
+STS 0x404, R18
+JMP while_1
+endwhile_1:
+CBI PORTB, 5
+RET
+
+while_1:
+LDS R30, 0x400
+LDS R20, 0x404
+CP R30, R20
+BRNE endwhile_1
+SBIS PIND, 2
+LDI R29, 0
+SBIC PIND, 2
+LDI R29, 1
+STS 0x408, R29
+LDS R26, 0x408
+LDI R21, 0
+CP R26, R21
+BREQ if_1
+JMP else_1
+endif_1:
+JMP while_1
+
+if_1:
+CBI PORTB, 5
+JMP endif_1
+
+else_1:
+SBI PORTB, 5
+JMP endif_1

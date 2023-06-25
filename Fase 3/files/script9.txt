@@ -1,0 +1,70 @@
+{
+    int counter;
+    int buttonStatus;
+    int prevButtonStatus;
+
+    counter = 0;
+    buttonStatus = 0;
+    prevButtonStatus = 0;
+
+    pinMode 2, 0;
+    pinMode 13, 1;
+    
+    pinMode 3, 1;
+    pinMode 4, 1;
+    pinMode 5, 1;
+    pinMode 6, 1;
+    pinMode 7, 1;
+    pinMode 8, 1;
+    pinMode 9, 1;
+
+    while (true)
+    {
+        buttonStatus = digitalRead 2;
+        digitalWrite 13, buttonStatus;
+        if (buttonStatus == 1)
+        {
+            if (prevButtonStatus == 0)
+            {
+                counter = counter + 1;
+            }
+        }
+
+        if (counter == 1)
+        {
+            digitalWrite 3, 1;
+            digitalWrite 4, 0;
+            digitalWrite 5, 0;
+            digitalWrite 6, 1;
+            digitalWrite 7, 1;
+            digitalWrite 8, 1;
+            digitalWrite 9, 1;
+        }
+        elseif (counter == 2)
+        {
+            digitalWrite 3, 0;
+            digitalWrite 4, 0;
+            digitalWrite 5, 1;
+            digitalWrite 6, 0;
+            digitalWrite 7, 0;
+            digitalWrite 8, 1;
+            digitalWrite 9, 0;
+        }
+        elseif (counter == 3)
+        {
+            digitalWrite 3, 0;
+            digitalWrite 4, 0;
+            digitalWrite 5, 0;
+            digitalWrite 6, 0;
+            digitalWrite 7, 1;
+            digitalWrite 8, 1;
+            digitalWrite 9, 0;
+        }
+        else
+        {
+            counter = 1;
+        }
+
+        prevButtonStatus = buttonStatus;
+    }
+}
