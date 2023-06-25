@@ -157,7 +157,6 @@ class Interpreter:
         return outputCommand
 
     def digitalPortWrite(self, pin, value):
-        # TODO: Fazer digitalWrite com variáveis
         outputCommand = []
         port, bit = self.device.getPinout(pin)
         port = "PORT" + port

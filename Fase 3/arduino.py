@@ -85,7 +85,7 @@ class Arduino:
 
     # Instructions - Jump instructions
     def RJMP(self, k):
-        return f"JMP {k}" # TODO: Verificar se n vai dar ruim
+        return f"JMP {k}"
 
     def RET(self):
         return "RET"
