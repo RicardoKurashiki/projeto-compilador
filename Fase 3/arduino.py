@@ -9,7 +9,7 @@ pinout = {
 class Arduino:
     def __init__(self):
         self.max_mem = 2303
-        self.mem = 256
+        self.mem = 512
         self.registers = {
             'R16': True,
             'R17': True,

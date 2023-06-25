@@ -288,7 +288,7 @@ class Interpreter:
                 comparisonCmd = self.getBranch("==")
             else:
                 loadConditionsCmd = self.loadConditions(condition[0].value, condition[2].value)
-                comparisonCmd = self.getInvertedBranch(condition[1].value, f"endwhile_{self.counter.getWhile()}:")
+                comparisonCmd = self.getInvertedBranch(condition[1].value, f"endwhile_{self.counter.getWhile()}")
             self.code.addInstructions(labelName, loadConditionsCmd)
             self.code.addInstructions(labelName, [comparisonCmd])
             self.translator(instructions, labelName)

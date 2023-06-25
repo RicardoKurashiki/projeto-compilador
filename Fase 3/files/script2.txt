@@ -4,23 +4,23 @@
     int buttonStatus;
 
     pinMode 2, 0;
-    pinMode 3, 1;
+    pinMode 13, 1;
 
     x = 20;
-    y = 10 + 20;
+    y = 20;
 
-    while (x <= y)
+    while (x == y)
     {
         buttonStatus = digitalRead 2;
         if (buttonStatus == 0)
         {
-            digitalWrite 3, 1;
+            digitalWrite 13, 0;
         }
         else
         {
-            digitalWrite 3, 0;
+            digitalWrite 13, 1;
         }
     }
 
-    digitalWrite 3,0;
+    digitalWrite 13, 0;
 }
