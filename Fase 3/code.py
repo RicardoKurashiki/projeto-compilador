@@ -26,7 +26,7 @@ class Code:
         labels = list(self.code.keys())
 
         for label in labels:
-            code += f"{label}:\n"
+            code += f"\n{label}:\n"
             code += "\n".join(self.code[label])
             code += "\n"
             if (label == "main"):

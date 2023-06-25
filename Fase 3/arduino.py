@@ -43,6 +43,8 @@ class Arduino:
             self.registers[reg] = True
 
     def getPinout(self, pin):
+        # OUTPUT - 1
+        # INPUT  - 0
         port = None
         bit = None
         for k in list(pinout.keys()):

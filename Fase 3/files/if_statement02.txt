@@ -1,31 +1,31 @@
 {
-    int x;
-    int y;
+    pinMode 13, 1;
 
-    x = 0;
-    y = 0;
+    int x;
+
+    x = 45;
 
     if (x > 10)
     {
         if (x > 40)
         {
-            y = 1;
+            digitalWrite 13, 1;
         }
         elseif (x > 30)
         {
-            y = 2;
+            digitalWrite 13, 0;
         }
         elseif (x > 20)
         {
-            y = 3;
+            digitalWrite 13, 0;
         }
         else
         {
-            y = 4;
+            digitalWrite 13, 0;
         }
     }
     else 
     {
-        y = 5;
+        digitalWrite 13, 0;
     }
 }

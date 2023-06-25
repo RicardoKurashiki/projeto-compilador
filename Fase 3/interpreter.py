@@ -12,10 +12,29 @@ class Interpreter:
 
     # == Funcoes Aux == #
 
-    def loadConditions(self, firstTerm, secondTerm):
+    def loadConditions(self, firstTerm, secondTerm = None):
         outputInstructions = []
         firstTermReg = self.device.getRegister()
         secondTermReg = self.device.getRegister()
+
+        if (firstTerm == "true"):
+            # Carrega número no registrador 1
+            outputInstructions.append(self.device.LDI(firstTermReg, "1"))
+            # Carrega número no registrador 2
+            outputInstructions.append(
+                self.device.LDI(secondTermReg, "1"))
+            # Realiza a comparação
+            outputInstructions.append(
+                self.device.CP(firstTermReg, secondTermReg))
+        if (firstTerm == "false"):
+            # Carrega número no registrador 1
+            outputInstructions.append(self.device.LDI(firstTermReg, "1"))
+            # Carrega número no registrador 2
+            outputInstructions.append(
+                self.device.LDI(secondTermReg, "0"))
+            # Realiza a comparação
+            outputInstructions.append(
+                self.device.CP(firstTermReg, secondTermReg))
         if (firstTerm.isdigit() and secondTerm.isdigit()):
             # Carrega número no registrador 1
             outputInstructions.append(self.device.LDI(firstTermReg, firstTerm))
@@ -39,7 +58,7 @@ class Interpreter:
             # Carrega na memária o valor da variável no registrador 1
             memAddress = self.varLog.getMem(firstTerm)
             outputInstructions.append(
-                self.device.LDS(firstTerm, memAddress))
+                self.device.LDS(firstTermReg, memAddress))
             # Carrega número no registrador 2
             outputInstructions.append(
                 self.device.LDI(secondTermReg, secondTerm))
@@ -50,7 +69,7 @@ class Interpreter:
             # Carrega na memária o valor da variável no registrador 1
             memAddress = self.varLog.getMem(firstTerm)
             outputInstructions.append(
-                self.device.LDS(firstTerm, memAddress))
+                self.device.LDS(firstTermReg, memAddress))
             # Carrega na memária o valor da variável no registrador 2
             memAddress = self.varLog.getMem(secondTerm)
             outputInstructions.append(
@@ -252,37 +271,70 @@ class Interpreter:
 
         self.code.addInstructions(labelName, commands)
 
-    def keywordLogic(self, keyword, condition, instructions, isEnd = True):
+    def keywordLogic(self, keyword, condition, instructions, currentLabelName,isEnd = True):
         code = []
         labelName = None
         # Realizar o código para a condicao
         if (keyword.value == "for"):
             pass
+        elif (keyword.value == "while"):
+            self.counter.addWhile()
+            labelName = f"while_{self.counter.getWhile()}"
+            self.code.addInstructions(currentLabelName, [self.device.RJMP(labelName)])
+            self.code.addInstructions(currentLabelName, [f"endwhile_{self.counter.getWhile()}:"])
+            self.code.addLabel(labelName)
+            if (len(condition) == 1):
+                loadConditionsCmd = self.loadConditions(condition[0].value)
+                comparisonCmd = self.getBranch("==")
+            else:
+                loadConditionsCmd = self.loadConditions(condition[0].value, condition[2].value)
+                comparisonCmd = self.getInvertedBranch(condition[1].value, f"endwhile_{self.counter.getWhile()}:")
+            self.code.addInstructions(labelName, loadConditionsCmd)
+            self.code.addInstructions(labelName, [comparisonCmd])
+            self.translator(instructions, labelName)
+            self.code.addInstructions(labelName, [self.device.RJMP(labelName)])
+            self.counter.removeWhile()
+        elif (keyword.value == "else"):
+            labelName = f"else_{self.counter.getIf()}"
+            self.code.addInstructions(
+                currentLabelName, [self.device.RJMP(labelName)])
+            self.code.addLabel(labelName)
+            self.translator(instructions, labelName)
+            self.code.addInstructions(
+                labelName,
+                [self.device.RJMP(f"endif_{self.counter.getIf()}")])
+            self.code.addInstructions(currentLabelName, [f"endif_{self.counter.getIf()}:"])
+            self.counter.resetElseif()
+            self.counter.removeIf()
         else:
             if (keyword.value == "if"):
                 self.counter.addIf()
                 labelName = f"if_{self.counter.getIf()}"
                 self.code.addLabel(labelName)
                 self.translator(instructions, labelName)
+                self.code.addInstructions(labelName,
+                                          [self.device.RJMP(f"endif_{self.counter.getIf()}")])
             elif (keyword.value == "elseif"):
                 self.counter.addElseif()
-                labelName = f"elseif_{self.counter.getIf()}{self.counter.getElseif()}" # Vai ser diferente
+                labelName = f"elseif_{self.counter.getIf()}{self.counter.getElseif()}"
                 self.code.addLabel(labelName)
                 self.translator(instructions, labelName)
-            elif (keyword.value == "else"):
-                labelName = f"else_{self.counter.getIf()}"
-                self.code.addLabel(labelName)
-                self.translator(instructions, labelName)
-            elif (keyword.value == "while"):
-                labelName = f"while_{self.counter.getWhile()}"
-                self.code.addLabel(labelName)
-                self.translator(instructions, labelName)
+                self.code.addInstructions(labelName,
+                                         [self.device.RJMP(f"endif_{self.counter.getIf()}")])
             if (isEnd):
-                if (keyword.value in ['if', 'else', 'elseif']):
-                    self.counter.resetElseif()
-                    self.counter.removeIf()
-                else:
-                    self.counter.removeWhile()
+                self.code.addInstructions(currentLabelName, [f"endif_{self.counter.getIf()}:"])
+                self.counter.resetElseif()
+                self.counter.removeIf()
+
+
+            if (len(condition) == 1):
+                loadConditionsCmd = self.loadConditions(condition[0].value)
+                comparisonCmd = self.getBranch("==")
+            else:
+                loadConditionsCmd = self.loadConditions(condition[0].value, condition[2].value)
+                comparisonCmd = self.getBranch(condition[1].value, labelName)
+            self.code.addInstructions(currentLabelName, loadConditionsCmd)
+            self.code.addInstructions(currentLabelName, [comparisonCmd])
 
     def translator(self, instructions, labelName = "main"):
         pos = 0
@@ -332,7 +384,7 @@ class Interpreter:
                     isEnd = instructions[pos + 1].value not in ['elseif', 'else']
                 # Faz a condicao dos keywords
                 self.keywordLogic(currentInstruction, condition,
-                                  keywordInstructions, isEnd)
+                                  keywordInstructions, labelName, isEnd)
             # Vai para a proxima instrucao
             pos += 1
 
@@ -346,7 +398,8 @@ class Interpreter:
         self.code.addLabel("main")
         self.translator(self.tokens, labelName="main")
         result = self.code.getCode()
-        self.code.printDebug()
+        # == Debug Print == #
+        # self.code.printDebug()
         # self.varLog.printLog()
         return result
 
@@ -369,6 +422,8 @@ class Counter:
         self.whileOpenClose.extend(self.whileLog)
 
     def removeWhile(self):
+        print(self.whileOpenClose)
+        print(self.whileDepth)
         self.whileOpenClose.pop()
         self.whileDepth -= 1
 

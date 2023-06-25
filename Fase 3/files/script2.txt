@@ -19,7 +19,6 @@
         else
         {
             digitalWrite 3, 0;
-            x = x + 1;
         }
     }
 

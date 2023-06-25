@@ -1,10 +1,15 @@
 {
     int counter;
 
+    pinMode 13, 1;
+    digitalWrite 13, 0;
+
     counter = 0;
 
-    while (counter < 100)
+    while (counter < 255)
     {
         counter = counter + 1;
     }
+
+    digitalWrite 13, 1;
 }
