@@ -34,4 +34,4 @@ class Code:
         return code
 
     def printDebug(self):
-        print(self.code)
+        print(str(self.code).replace("'", '"'))

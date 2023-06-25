@@ -1,4 +1,5 @@
 {
+    int counter;
     int x;
     int y;
     int buttonStatus;
@@ -6,21 +7,27 @@
     pinMode 2, 0;
     pinMode 13, 1;
 
-    x = 20;
-    y = x - 10 + 2 + 3 + 5;
+    counter = 0;
+
+    x = 1;
+    y = 1;
 
     while (x == y)
     {
         buttonStatus = digitalRead 2;
         if (buttonStatus == 0)
         {
-            digitalWrite 13, 0;
+            digitalWrite 13, 1;
+            counter = counter + 1;
         }
         else
         {
-            digitalWrite 13, 1;
+            digitalWrite 13, 0;
+        }
+        if (counter >= 10)
+        {
+            y = 2;
         }
     }
-
     digitalWrite 13, 0;
 }

@@ -171,6 +171,4 @@ def _findTokens(c):
 def run(f):
     code = f.getLines()
     _findTokens(code)
-    # for i in interpreter.tokens:
-    #     print(i.type, i.value)
     return interpreter

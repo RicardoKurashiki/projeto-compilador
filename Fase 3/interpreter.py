@@ -229,10 +229,6 @@ class Interpreter:
         commands.append(self.device.STS(targetAdd, receiverRegister))
         self.code.addInstructions(labelName, commands)
 
-    def comparisonLogic(self):
-        # >, <, ...
-        pass
-
     def variableLogic(self, instructions, pos, labelName):
         targetVar = instructions[pos - 1].value
         targetAdd = self.varLog.getMem(targetVar)
@@ -402,14 +398,15 @@ class Interpreter:
         # == Debug Print == #
         # self.code.printDebug()
         # self.varLog.printLog()
+        # == Debug Finish == #
         return result
 
 class Counter:
     def __init__(self):
         self.ifDepth = 0
         self.ifLog = [0]
-        self.elseifPos = -1
         self.ifOpenClose = []
+        self.elseifPos = -1
         self.whileLog = [0]
         self.whileDepth = 0
         self.whileOpenClose = []
