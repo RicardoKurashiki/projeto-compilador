@@ -16,7 +16,6 @@ class Interpreter:
         outputInstructions = []
         firstTermReg = self.device.getRegister()
         secondTermReg = self.device.getRegister()
-
         if (firstTerm == "true"):
             # Carrega número no registrador 1
             outputInstructions.append(self.device.LDI(firstTermReg, "1"))
@@ -26,7 +25,7 @@ class Interpreter:
             # Realiza a comparação
             outputInstructions.append(
                 self.device.CP(firstTermReg, secondTermReg))
-        if (firstTerm == "false"):
+        elif (firstTerm == "false"):
             # Carrega número no registrador 1
             outputInstructions.append(self.device.LDI(firstTermReg, "1"))
             # Carrega número no registrador 2
@@ -35,7 +34,7 @@ class Interpreter:
             # Realiza a comparação
             outputInstructions.append(
                 self.device.CP(firstTermReg, secondTermReg))
-        if (firstTerm.isdigit() and secondTerm.isdigit()):
+        elif (firstTerm.isdigit() and secondTerm.isdigit()):
             # Carrega número no registrador 1
             outputInstructions.append(self.device.LDI(firstTermReg, firstTerm))
             # Carrega número no registrador 2
@@ -155,6 +154,7 @@ class Interpreter:
         return outputCommand
 
     def digitalPortWrite(self, pin, value):
+        # TODO: Fazer digitalWrite com variáveis
         outputCommand = ""
         port, bit = self.device.getPinout(pin)
         port = "PORT" + port
@@ -276,6 +276,7 @@ class Interpreter:
         labelName = None
         # Realizar o código para a condicao
         if (keyword.value == "for"):
+            # TODO: Fazer lógica do for
             pass
         elif (keyword.value == "while"):
             self.counter.addWhile()
@@ -285,7 +286,7 @@ class Interpreter:
             self.code.addLabel(labelName)
             if (len(condition) == 1):
                 loadConditionsCmd = self.loadConditions(condition[0].value)
-                comparisonCmd = self.getBranch("==")
+                comparisonCmd = self.getInvertedBranch("==", f"endwhile_{self.counter.getWhile()}")
             else:
                 loadConditionsCmd = self.loadConditions(condition[0].value, condition[2].value)
                 comparisonCmd = self.getInvertedBranch(condition[1].value, f"endwhile_{self.counter.getWhile()}")

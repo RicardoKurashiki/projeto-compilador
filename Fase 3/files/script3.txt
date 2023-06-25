@@ -1,17 +1,20 @@
 {
+    int buttonStatus;
 
-    int x;
-    int y;
-
-    x = 10;
-    y = 2;
-
-    x = 10 + 10;
-    y = x + 10;
-    x = y - 10;
-
-    pinMode 3, 1;
     pinMode 2, 0;
-    digitalWrite 3, 1;
-    digitalWrite 3, 0;
+    pinMode 13, 1;
+
+    while (true)
+    {
+        buttonStatus = digitalRead 2;
+        if (buttonStatus == 0)
+        {
+            digitalWrite 13, 1;
+        }
+        else
+        {
+            digitalWrite 13, 0;
+        }
+    }
+    digitalWrite 13, 0;
 }

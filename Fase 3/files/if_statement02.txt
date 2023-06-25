@@ -1,6 +1,4 @@
 {
-    pinMode 13, 1;
-
     int x;
 
     x = 45;
@@ -28,4 +26,6 @@
     {
         digitalWrite 13, 0;
     }
+
+    pinMode 13, 1;
 }
